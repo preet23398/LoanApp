@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to Loan Portal</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: url("/static/images/jeffrey-blum-7-gaPkhIgqs-unsplash.jpg") no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      position: relative; /* so absolute positioning inside body works */
+    }
+
+    .content-box {
+      background-color: rgba(0, 0, 0, 0.6); /* Dark translucent background */
+      padding: 40px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+      color: white;
+      max-width: 500px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 30px;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    a.button {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 12px 24px;
+      margin: 10px;
+      text-decoration: none;
+      border: 2px solid white;
+      border-radius: 6px;
+      font-size: 1.2rem;
+      transition: background-color 0.3s ease;
+      display: inline-block;
+    }
+
+    a.button:hover {
+      background-color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Admin button on top right */
+    .admin-button {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 10px 18px;
+      border: 2px solid white;
+      border-radius: 6px;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+
+    .admin-button:hover {
+      background-color: rgba(255, 255, 255, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <a href="/admin/login" class="admin-button">Admin</a>
+  <div class="content-box">
+    <h1>Loan Application Portal</h1>
+    <a href="/login" class="button">Login</a>
+    <a href="/signup" class="button">Signup</a>
+  </div>
+</body>
+</html>

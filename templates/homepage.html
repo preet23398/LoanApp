@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Homepage</title>
+  <style>
+    /* Simple modal styling */
+    #popupModal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      padding-top: 100px;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    #popupContent {
+      background-color: white;
+      margin: auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Loan Application Portal</h1>
+
+{% if show_popup %}
+<div id="popupModal">
+  <div id="popupContent">
+    <h3>Please complete your profile details</h3>
+    <form method="POST" action="/update_profile">
+      <label>Email:</label><br>
+      <input type="email" name="email" required><br><br>
+      
+      <label>Phone:</label><br>
+      <input type="tel" name="phone" required><br><br>
+      
+      <!-- Removed DOB field here -->
+      
+      <button type="submit">Save</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Show popup on page load
+  document.getElementById('popupModal').style.display = 'block';
+</script>
+{% endif %}
+
+</body>
+</html>
