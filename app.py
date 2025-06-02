@@ -35,6 +35,7 @@ def homepage():
 
     return render_template('homepage.html', show_popup=show_popup)
 
+'''
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
     if 'user_id' not in session:
@@ -52,7 +53,6 @@ def update_profile():
     cur.close()
 
     return redirect(url_for('homepage'))
-
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -97,6 +97,8 @@ def signup():
         return render_template('to_be_approved.html', username=username)
 
     return render_template('signup.html')
+
+'''
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -206,7 +208,6 @@ def admin_signup():
         return redirect(url_for('admin_login'))
 
     return render_template('admin_signup.html', error=error)
-
 
 
 @app.route('/admin/dashboard')
