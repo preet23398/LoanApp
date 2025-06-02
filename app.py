@@ -138,6 +138,7 @@ def get_workflows():
     cur.close()
     return jsonify(workflows)
 
+'''
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     error = None
@@ -216,6 +217,6 @@ def admin_dashboard():
         return redirect(url_for('admin_login'))
     return "Welcome Admin! (Dashboard placeholder)"
 
-
+'''
 if __name__ == '__main__':
     app.run(debug=True)
