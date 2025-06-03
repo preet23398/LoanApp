@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Welcome to Loan Portal</title>
   <style>
     body {
@@ -14,19 +14,20 @@
       position: relative;
     }
 
-    /* Right-side white content box */
     .content-box {
       position: absolute;
-      top: 20%;
-      left: 75%;
+      top: 15%;
+      left: 60%;
       transform: translateX(-50%);
       background-color: white;
-      padding: 1000px;
+      padding: 30px 40px;
       border-radius: 10px;
       text-align: center;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
       color: #333;
       max-width: 1500px;
+      max-height: 80vh;
+      overflow-y: auto;
     }
 
     h1 {
@@ -54,7 +55,7 @@
       margin-bottom: 30px;
       font-size: 1.5rem;
       text-align: center;
-      color: black;
+      color: white;
     }
 
     .dashboard a {
@@ -70,20 +71,8 @@
     }
 
     .dashboard a:hover {
-      background: rgba(0, 0, 0, 0.1);
+      background: #f0f0f0;
       color: black;
-    }
-
-    /* White left-side box behind the dashboard */
-    .left-box {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100vh;
-      width: 350px;
-      background-color: white;
-      box-shadow: 2px 0 15px rgba(0, 0, 0, 0.2);
-      z-index: 1;
     }
 
     /* Small translucent text box at the top */
@@ -101,31 +90,180 @@
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
     }
 
+    /* Loan table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table, th, td {
+      border: 1px solid #333;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
 
-  <!-- White left-side box -->
-  <div class="left-box"></div>
-
-  <!-- Translucent dashboard (on top of white box) -->
+  <!-- Translucent dashboard -->
   <div class="dashboard">
     <h2>Dashboard</h2>
-    <a href="#">Homepage</a>
-    <a href="#">Loan Requests</a>
-    <a href="#">Statistics</a>
-    <a href="#">Alerts</a>
-    <a href="#">Logout</a>
+    <a href="{{ url_for('homepage') }}">Homepage</a>
+    <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
+    <a href="{{ url_for('statistics') }}">Statistics</a>
+    <a href="{{ url_for('alerts') }}">Alerts</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
   </div>
 
-  <!-- White content box on the right -->
+  <!-- White content box -->
   <div class="content-box">
+    <h1>All Loan Applications</h1>
+
+    <!-- Filter Dropdown -->
+    <div style="margin-bottom: 20px; text-align: left;">
+      <label for="loanFilter">Filter Loans:</label>
+      <select id="loanFilter" name="loanFilter">
+        <option value="">-- Select Option --</option>
+        <option value="workflow">By type of Workflow</option>
+        <option value="loan_product">By Loan Product</option>
+        <option value="loan_amount">By Loan Amount</option>
+        <option value="branch">By Branch</option>
+      </select>
+
+      <div id="subFilterContainer" style="margin-top: 10px; display: none;">
+        <label for="workflowId">Select Workflow:</label>
+        <select id="workflowId" name="workflowId">
+          <option value="">-- Choose Workflow --</option>
+          <option value="Term Loan">Term Loan</option>
+          <option value="Working Capital Loan">Working Capital Loan</option>
+          <option value="Group Loan">Group Loan</option>
+          <option value="Jewel/Gold Loan">Jewel/Gold Loan</option>
+          <option value="Business Loan">Business Loan</option>
+          <option value="Commercial Real Estate Loan">Commercial Real Estate Loan</option>
+        </select>
+      </div>
+
+      <div id="productFilterContainer" style="margin-top: 10px; display: none;">
+  <label for="productId">Select Loan Product:</label>
+  <select id="productId" name="productId">
+    <option value="">-- Choose Product --</option>
+    <option value="Term Loan Product">Term Loan Product</option>
+    <option value="Working Capital Product">Working Capital Product</option>
+    <option value="Group Loan Product">Group Loan Product</option>
+    <option value="Jewel/Gold Loan Product">Jewel/Gold Loan Product</option>
+    <option value="Business Loan Product">Business Loan Product</option>
+    <option value="Commercial Real Estate Product">Commercial Real Estate Product</option>
+  </select>
+</div>
+
+    </div>
+
+    {% if applications %}
+    <table id="loanTable">
+      <thead>
+        <tr>
+          {% for key in applications[0].keys() %}
+          <th>{{ key | capitalize }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          {% for value in app.values() %}
+          <td>{{ value }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p>No loan applications found.</p>
+    {% endif %}
   </div>
 
-    <!-- Top translucent text box -->
+  <!-- Top translucent text box -->
   <div class="top-text">
     Loan Requests
   </div>
+
+  <script>
+  function toggleSubDropdown() {
+  const selected = document.getElementById("loanFilter").value;
+  const workflowContainer = document.getElementById("subFilterContainer");
+  const productContainer = document.getElementById("productFilterContainer");
+
+  workflowContainer.style.display = selected === "workflow" ? "block" : "none";
+  productContainer.style.display = selected === "loan_product" ? "block" : "none";
+
+  if (selected !== "workflow") {
+    document.getElementById("workflowId").value = "";
+  }
+
+  if (selected !== "loan_product") {
+    document.getElementById("productId").value = "";
+  }
+
+  filterTable();
+}
+
+
+  function getColumnIndexByName(table, name) {
+    const headers = table.tHead.rows[0].cells;
+    for (let i = 0; i < headers.length; i++) {
+      if (headers[i].textContent.trim().toLowerCase() === name.toLowerCase()) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function filterTable() {
+  const filterType = document.getElementById("loanFilter").value;
+  const workflowFilter = document.getElementById("workflowId").value.toLowerCase();
+  const productFilter = document.getElementById("productId").value.toLowerCase();
+  const table = document.getElementById("loanTable");
+  if (!table) return;
+
+  const rows = table.tBodies[0].rows;
+  const workflowIndex = getColumnIndexByName(table, "workflow_name");
+  const productIndex = getColumnIndexByName(table, "product_name");  // Adjust column name as needed
+
+  for (let row of rows) {
+    let showRow = true;
+
+    if (filterType === "workflow" && workflowFilter && workflowIndex !== -1) {
+      const cell = row.cells[workflowIndex].textContent.toLowerCase();
+      showRow = cell.includes(workflowFilter);
+    }
+
+    if (filterType === "loan_product" && productFilter && productIndex !== -1) {
+      const cell = row.cells[productIndex].textContent.toLowerCase();
+      showRow = cell.includes(productFilter);
+    }
+
+    row.style.display = showRow ? "" : "none";
+  }
+}
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+    toggleSubDropdown();
+
+    document.getElementById("loanFilter").addEventListener("change", () => {
+      toggleSubDropdown();
+      filterTable();
+    });
+
+    document.getElementById("workflowId").addEventListener("change", filterTable);
+    document.getElementById("productId").addEventListener("change", filterTable);
+
+  });
+</script>
 
 
 </body>

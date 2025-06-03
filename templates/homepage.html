@@ -14,7 +14,7 @@
       position: relative;
     }
 
-    /* Right-side white content box */
+    /* Right-side white content box 
     .content-box {
       position: absolute;
       top: 20%;
@@ -28,7 +28,7 @@
       color: #333;
       max-width: 1500px;
     }
-
+    */
     h1 {
       font-size: 2.2rem;
       margin-bottom: 25px;
@@ -54,7 +54,7 @@
       margin-bottom: 30px;
       font-size: 1.5rem;
       text-align: center;
-      color: black;
+      color: white;
     }
 
     .dashboard a {
@@ -70,20 +70,8 @@
     }
 
     .dashboard a:hover {
-      background: rgba(0, 0, 0, 0.1);
+      background: #f0f0f0;
       color: black;
-    }
-
-    /* White left-side box behind the dashboard */
-    .left-box {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100vh;
-      width: 350px;
-      background-color: white;
-      box-shadow: 2px 0 15px rgba(0, 0, 0, 0.2);
-      z-index: 1;
     }
 
     /* Small translucent text box at the top */
@@ -105,9 +93,6 @@
 </head>
 <body>
 
-  <!-- White left-side box -->
-  <div class="left-box"></div>
-
   <!-- Translucent dashboard (on top of white box) -->
   <div class="dashboard">
     <h2>Dashboard</h2>
@@ -126,7 +111,6 @@
   <div class="top-text">
     Loan Management Homepage
   </div>
-
 
 </body>
 </html>

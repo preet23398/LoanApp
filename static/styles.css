@@ -16,7 +16,7 @@ body {
   border-radius: 10px;
   color: white;
   width: 100%;
-  max-width: 280px; /* compact width */
+  max-width: 280px; 
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
 }
 
@@ -34,8 +34,8 @@ label, input, button {
 }
 
 input {
-  width: 80%; /* make the white boxes narrower */
-  margin: 0 auto 12px auto; /* center the box and add spacing below */
+  width: 80%; 
+  margin: 0 auto 12px auto; 
   padding: 8px;
   border: none;
   border-radius: 5px;
@@ -44,7 +44,7 @@ input {
 
 
 button {
-  width: 80%; /* match width with input */
+  width: 80%; 
   margin: 0 auto;
   padding: 10px;
   background-color: #007bff;

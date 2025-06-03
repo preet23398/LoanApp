@@ -26,7 +26,6 @@ def homepage():
     user_data = cur.fetchone()
     cur.close()
 
-    # Check if any details are missing
     show_popup = False
     if user_data:
         email, phone = user_data
@@ -76,7 +75,64 @@ def get_workflows():
 
 @app.route('/loan-requests')
 def loan_requests():
-    return render_template('loan-requests.html')
+    user_id = session.get('user_id')
+    filter_type = request.args.get('filter')
+    workflow_id = request.args.get('workflow_id')
+    product_id = request.args.get('product_id')
+
+    cur = mysql.connection.cursor(dictionary=True)
+
+    if filter_type == 'workflow' and workflow_id:
+        query = """
+            SELECT la.*, w.name AS workflow_name, lp.name AS product_name
+            FROM loan_applications la
+            JOIN workflows w ON la.workflow_id = w.workflow_id
+            JOIN loan_products lp ON la.workflow_id = lp.workflow_id
+            WHERE la.user_id = %s AND la.workflow_id = %s
+        """
+        cur.execute(query, (user_id, workflow_id))
+
+    elif filter_type == 'loan_product' and product_id:
+        query = """
+            SELECT la.*, w.name AS workflow_name, lp.name AS product_name
+            FROM loan_applications la
+            JOIN workflows w ON la.workflow_id = w.workflow_id
+            JOIN loan_products lp ON la.workflow_id = lp.workflow_id
+            WHERE la.user_id = %s AND lp.product_id = %s
+        """
+        cur.execute(query, (user_id, product_id))
+
+    else:
+        query = """
+            SELECT la.*, w.name AS workflow_name, lp.name AS product_name
+            FROM loan_applications la
+            JOIN workflows w ON la.workflow_id = w.workflow_id
+            JOIN loan_products lp ON la.workflow_id = lp.workflow_id
+            WHERE la.user_id = %s
+        """
+        cur.execute(query, (user_id,))
+
+    applications = cur.fetchall()
+    cur.close()
+
+    return render_template('loan-requests.html', applications=applications)
+
+
+
+
+@app.route('/statistics')
+def statistics():
+    return render_template('statistics.html')
+
+@app.route('/alerts')
+def alerts():
+    return render_template('alerts.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
