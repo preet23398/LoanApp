@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Application Details</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: url("/static/images/jeffrey-blum-7-gaPkhIgqs-unsplash.jpg") no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Segoe UI', sans-serif;
+      color: #333;
+    }
+
+    .dashboard {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 350px;
+      background-color: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+      padding: 30px 20px;
+      color: black;
+      z-index: 2;
+    }
+
+    .dashboard h2 {
+      margin-bottom: 30px;
+      font-size: 1.5rem;
+      text-align: center;
+      color: white;
+    }
+
+    .dashboard a {
+      display: block;
+      color: black;
+      text-decoration: none;
+      margin: 15px 0;
+      padding: 25px 15px;
+      border-radius: 5px;
+      border: 1px solid black;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .dashboard a:hover {
+      background: #f0f0f0;
+      color: black;
+    }
+
+    .top-text {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 20px 25px;
+      border-radius: 8px;
+      font-size: 2rem;
+      z-index: 3;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+
+    /* New flex container for side-by-side content */
+    .main-content {
+      display: flex;
+      gap: 40px; /* space between application and workflow */
+      margin-left: 450px; /* same left margin as before */
+      margin-top: 150px;
+    }
+
+    .content-box {
+      flex: 1;
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      max-width: 600px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .content-box h2 {
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+      color: #222;
+    }
+
+    .content-box table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .content-box table td {
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .label {
+      font-weight: bold;
+      width: 40%;
+    }
+
+    .workflow-box {
+      flex: 1;
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      max-width: 400px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      height: fit-content;
+    }
+
+    .workflow-box h2 {
+      margin-bottom: 20px;
+      color: #222;
+    }
+
+    .workflow-box ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .workflow-box li {
+      display: flex;
+      justify-content: flex-start;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      background-color: #f8f9fa;
+      border: 1px solid #ccc;
+      font-weight: normal;
+      color: #333;
+    }
+
+    .workflow-box li.active-stage {
+      background-color: #d4edda;
+      border-color: #28a745;
+      font-weight: bold;
+      color: #155724;
+    }
+
+    .stage-id {
+      font-weight: bold;
+      min-width: 40px;
+      color: #555;
+    }
+
+    .stage-name {
+      flex: 1;
+    }
+
+    /* Status section styles */
+    .status-box {
+      margin-left: 450px;
+      margin-top: 40px;
+      max-width: 1050px;
+      display: flex;
+      gap: 40px;
+    }
+
+    .status-content {
+      flex: 1;
+      max-width: 600px;
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    }
+
+    .status-content h2 {
+      margin-bottom: 20px;
+      color: #222;
+    }
+
+    .status-list {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 20px;
+    }
+
+    .status-list li {
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background-color: #f8f9fa;
+      border: 1px solid #ccc;
+      font-weight: normal;
+      color: #333;
+    }
+
+    .status-list li.current-status {
+      background-color: #d4edda;
+      border-color: #28a745;
+      font-weight: bold;
+      color: #155724;
+    }
+
+    /* Buttons and select */
+    #status-select {
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      display: none;
+    }
+
+    #update-status-btn {
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: 1px solid #28a745;
+      background-color: #28a745;
+      color: white;
+      cursor: pointer;
+    }
+
+    #submit-status-btn {
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: 1px solid #007bff;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      display: none;
+      margin-left: 10px;
+    }
+
+    #cancel-status-btn {
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: 1px solid #dc3545;
+      background-color: #dc3545;
+      color: white;
+      cursor: pointer;
+      display: none;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left Dashboard -->
+  <div class="dashboard">
+    <h2>Dashboard</h2>
+    <a href="{{ url_for('homepage') }}">Homepage</a>
+    <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
+    <a href="{{ url_for('statistics') }}">Statistics</a>
+    <a href="#">Alerts</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </div>
+
+  <!-- Page Title -->
+  <div class="top-text">
+    Application Details
+  </div>
+
+  <!-- Side by side container -->
+  <div class="main-content">
+
+    <!-- Application Data -->
+    <div class="content-box">
+      <h2>Application #{{ application.application_id }}</h2>
+      <table>
+        {% for key, value in application.items() %}
+          <tr>
+            <td class="label">{{ key.replace('_', ' ').capitalize() }}</td>
+            <td>{{ value }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    </div>
+
+    <!-- Workflow Stages List -->
+    <div class="workflow-box">
+      <h2>Workflow Stages</h2>
+      <ul>
+        {% for stage in stages %}
+          <li class="{% if stage.stage_id|string == current_stage_id|string %}active-stage{% endif %}">
+
+            <span class="stage-id">{{ stage.stage_order }}</span>
+            <span class="stage-name">{{ stage.stage_name }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+
+      <!-- Update form -->
+      <form id="update-stage-form" method="POST" action="{{ url_for('update_stage', application_id=application.application_id) }}">
+        <select name="new_stage_id" id="stage-select" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; display: none; margin-top: 15px;">
+          {% for stage in stages %}
+            <option value="{{ stage.stage_id }}" {% if stage.stage_id == current_stage_id %}selected{% endif %}>{{ stage.stage_name }}</option>
+          {% endfor %}
+        </select>
+        <div style="margin-top: 10px;">
+          <button type="button" id="update-stage-btn" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #28a745; background-color: #28a745; color: white; cursor: pointer;">
+            Update Stage
+          </button>
+          <button type="submit" id="submit-btn" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #007bff; background-color: #007bff; color: white; cursor: pointer; display: none; margin-left: 10px;">
+            Save
+          </button>
+          <button type="button" id="cancel-btn" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #dc3545; background-color: #dc3545; color: white; cursor: pointer; display: none; margin-left: 10px;">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Status section below -->
+  <div class="status-box">
+    <div class="status-content">
+      <h2>Status for Current Workflow Stage</h2>
+      <ul class="status-list">
+        {% for status in statuses %}
+          <li class="{% if status == current_status %}current-status{% endif %}">{{ status.capitalize() }}</li>
+        {% endfor %}
+      </ul>
+
+      <form id="update-status-form" method="POST" action="{{ url_for('update_status', application_id=application.application_id) }}">
+        <select name="new_status" id="status-select">
+          {% for status in statuses %}
+            <option value="{{ status }}" {% if status == current_status %}selected{% endif %}>{{ status.capitalize() }}</option>
+          {% endfor %}
+        </select>
+        <div style="margin-top: 10px;">
+          <button type="button" id="update-status-btn">Update Status</button>
+          <button type="submit" id="submit-status-btn">Save</button>
+          <button type="button" id="cancel-status-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Workflow stage update toggling
+    const updateBtn = document.getElementById('update-stage-btn');
+    const stageSelect = document.getElementById('stage-select');
+    const submitBtn = document.getElementById('submit-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+
+    updateBtn.addEventListener('click', () => {
+      updateBtn.style.display = 'none';
+      stageSelect.style.display = 'inline-block';
+      submitBtn.style.display = 'inline-block';
+      cancelBtn.style.display = 'inline-block';
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      updateBtn.style.display = 'inline-block';
+      stageSelect.style.display = 'none';
+      submitBtn.style.display = 'none';
+      cancelBtn.style.display = 'none';
+      // Reset dropdown to current_stage_id
+      stageSelect.value = "{{ current_stage_id }}";
+    });
+
+    // Status update toggling
+    const updateStatusBtn = document.getElementById('update-status-btn');
+    const statusSelect = document.getElementById('status-select');
+    const submitStatusBtn = document.getElementById('submit-status-btn');
+    const cancelStatusBtn = document.getElementById('cancel-status-btn');
+
+    // Initially hide the select and save/cancel buttons
+    statusSelect.style.display = 'none';
+    submitStatusBtn.style.display = 'none';
+    cancelStatusBtn.style.display = 'none';
+
+    updateStatusBtn.addEventListener('click', () => {
+      updateStatusBtn.style.display = 'none';
+      statusSelect.style.display = 'inline-block';
+      submitStatusBtn.style.display = 'inline-block';
+      cancelStatusBtn.style.display = 'inline-block';
+    });
+
+    cancelStatusBtn.addEventListener('click', () => {
+      updateStatusBtn.style.display = 'inline-block';
+      statusSelect.style.display = 'none';
+      submitStatusBtn.style.display = 'none';
+      cancelStatusBtn.style.display = 'none';
+      // Reset dropdown to current_status
+      statusSelect.value = "{{ current_status }}";
+    });
+  </script>
+
+</body>
+</html>

@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_mysql_connector import MySQL
-from flask import make_response
 
 app = Flask(__name__)
 app.secret_key = 'your-very-secret-key-here'
@@ -22,7 +21,6 @@ def homepage():
         return redirect(url_for('login'))
 
     user_id = session['user_id']
-    
     cur = mysql.connection.cursor()
     cur.execute("SELECT email, phone FROM users WHERE user_id = %s", (user_id,))
     user_data = cur.fetchone()
@@ -34,12 +32,7 @@ def homepage():
         if not email or not phone:
             show_popup = True
 
-    # Render and return response with no-cache headers
-    response = make_response(render_template('homepage.html', show_popup=show_popup))
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '-1'
-    return response
+    return render_template('homepage.html', show_popup=show_popup)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -65,7 +58,7 @@ def login():
                 session['username'] = username
                 return redirect(url_for('homepage'))
             else:
-                error= "Wrong Password."
+                error = "Wrong password entered."
         else:
             error = "Username not found."
 
@@ -129,7 +122,6 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-
 @app.route("/application/<int:application_id>")
 def application_detail(application_id):
     cursor = mysql.connection.cursor(dictionary=True)
@@ -144,7 +136,6 @@ def application_detail(application_id):
 
     workflow_id = application['workflow_id']
     current_stage_id = application['current_stage_id']
-    current_status = application.get('status')  # assuming 'status' column exists in loan_applications
 
     # Get all stages for this workflow
     cursor.execute("SELECT * FROM workflow_stages WHERE workflow_id = %s ORDER BY stage_order", (workflow_id,))
@@ -152,15 +143,7 @@ def application_detail(application_id):
 
     cursor.close()
 
-    # List of possible statuses
-    statuses = ['pending', 'in progress', 'credit check', 'under review', 'approved']
-
-    return render_template("application_detail.html", 
-                           application=application, 
-                           stages=stages, 
-                           current_stage_id=current_stage_id,
-                           statuses=statuses,
-                           current_status=current_status)
+    return render_template("application_detail.html", application=application, stages=stages, current_stage_id=current_stage_id)
 
 
 @app.route('/update_stage/<int:application_id>', methods=['POST'])
@@ -210,40 +193,6 @@ def update_stage(application_id):
 
     flash('Stage updated successfully!', 'success')
     return redirect(url_for('application_detail', application_id=application_id))
-
-@app.route('/update_status/<int:application_id>', methods=['POST'])
-def update_status(application_id):
-    new_status = request.form.get('new_status')
-    allowed_statuses = ['pending', 'in progress', 'credit check', 'under review', 'approved']
-
-    if new_status not in allowed_statuses:
-        flash('Invalid status selected.', 'error')
-        return redirect(url_for('application_detail', application_id=application_id))
-
-    cursor = mysql.connection.cursor()
-
-    # Optional: Verify application exists
-    cursor.execute("SELECT application_id FROM loan_applications WHERE application_id = %s", (application_id,))
-    if not cursor.fetchone():
-        cursor.close()
-        flash('Application not found.', 'error')
-        return redirect(url_for('application_detail', application_id=application_id))
-
-    cursor.execute(
-        "UPDATE loan_applications SET status = %s WHERE application_id = %s",
-        (new_status, application_id)
-    )
-    mysql.connection.commit()
-    cursor.close()
-
-    flash('Status updated successfully!', 'success')
-    return redirect(url_for('application_detail', application_id=application_id))
-
-
-@app.route('/forgot_password', methods=['GET', 'POST'])
-def forgot_password():
-    # render your forgot_password.html here
-    return render_template('forgot_password.html')
 
 
 if __name__ == '__main__':

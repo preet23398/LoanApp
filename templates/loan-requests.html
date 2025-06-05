@@ -36,7 +36,6 @@
       color: #222;
     }
 
-    /* Translucent vertical dashboard */
     .dashboard {
       position: fixed;
       top: 0;
@@ -75,7 +74,6 @@
       color: black;
     }
 
-    /* Small translucent text box at the top */
     .top-text {
       position: fixed;
       top: 10px;
@@ -90,7 +88,6 @@
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
     }
 
-    /* Loan table */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -109,7 +106,6 @@
 </head>
 <body>
 
-  <!-- Translucent dashboard -->
   <div class="dashboard">
     <h2>Dashboard</h2>
     <a href="{{ url_for('homepage') }}">Homepage</a>
@@ -119,7 +115,6 @@
     <a href="{{ url_for('logout') }}">Logout</a>
   </div>
 
-  <!-- White content box -->
   <div class="content-box">
     <h1>All Loan Applications</h1>
 
@@ -127,17 +122,17 @@
     <div style="margin-bottom: 20px; text-align: left;">
       <label for="loanFilter">Filter Loans:</label>
       <select id="loanFilter" name="loanFilter">
-        <option value="">-- Select Option --</option>
+        <option value="">-- No filter --</option>
         <option value="workflow">By type of Workflow</option>
         <option value="loan_product">By Loan Product</option>
-        <option value="loan_amount">By Loan Amount</option>
-        <option value="branch">By Branch</option>
+        <option value="status">By Status</option>
       </select>
 
+      <!-- Workflow Filter -->
       <div id="subFilterContainer" style="margin-top: 10px; display: none;">
         <label for="workflowId">Select Workflow:</label>
         <select id="workflowId" name="workflowId">
-          <option value="">-- Choose Workflow --</option>
+          <option value="">-- No filter --</option>
           <option value="Term Loan">Term Loan</option>
           <option value="Working Capital Loan">Working Capital Loan</option>
           <option value="Group Loan">Group Loan</option>
@@ -147,38 +142,60 @@
         </select>
       </div>
 
+      <!-- Product Filter -->
       <div id="productFilterContainer" style="margin-top: 10px; display: none;">
-  <label for="productId">Select Loan Product:</label>
-  <select id="productId" name="productId">
-    <option value="">-- Choose Product --</option>
-    <option value="Term Loan Product">Term Loan Product</option>
-    <option value="Working Capital Product">Working Capital Product</option>
-    <option value="Group Loan Product">Group Loan Product</option>
-    <option value="Jewel/Gold Loan Product">Jewel/Gold Loan Product</option>
-    <option value="Business Loan Product">Business Loan Product</option>
-    <option value="Commercial Real Estate Product">Commercial Real Estate Product</option>
-  </select>
-</div>
+        <label for="productId">Select Loan Product:</label>
+        <select id="productId" name="productId">
+          <option value="">-- No filter --</option>
+          <option value="Term Loan Product">Term Loan Product</option>
+          <option value="Working Capital Product">Working Capital Product</option>
+          <option value="Group Loan Product">Group Loan Product</option>
+          <option value="Jewel/Gold Loan Product">Jewel/Gold Loan Product</option>
+          <option value="Business Loan Product">Business Loan Product</option>
+          <option value="Commercial Real Estate Product">Commercial Real Estate Product</option>
+        </select>
+      </div>
 
+      <!-- Status Filter -->
+      <div id="statusFilterContainer" style="margin-top: 10px; display: none;">
+        <label for="statusId">Select Status:</label>
+        <select id="statusId" name="statusId">
+          <option value="">-- No filter --</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Pending">Pending</option>
+          <option value="Credit Check">Credit Check</option>
+          <option value="Under Review">Under Review</option>
+          <option value="Approved">Approved</option>
+        </select>
+      </div>
     </div>
 
     {% if applications %}
     <table id="loanTable">
       <thead>
-        <tr>
-          {% for key in applications[0].keys() %}
-          <th>{{ key | capitalize }}</th>
-          {% endfor %}
-        </tr>
-      </thead>
+  <tr>
+    {% for key in applications[0].keys() %}
+    <th>{{ key | capitalize }}</th>
+    {% endfor %}
+    <th>Details</th>  <!-- Add this -->
+  </tr>
+</thead>
+
       <tbody>
         {% for app in applications %}
-        <tr>
-          {% for value in app.values() %}
-          <td>{{ value }}</td>
-          {% endfor %}
-        </tr>
-        {% endfor %}
+<tr>
+  {% for value in app.values() %}
+  <td>{{ value }}</td>
+  {% endfor %}
+  <td>
+    <form action="{{ url_for('application_detail', application_id=app['application_id']) }}">
+      <button type="submit" style="width: 30px; height: 30px; background-color: #3498db; border: none; color: white; border-radius: 4px; cursor: pointer;">&#9654;</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}
+
+
       </tbody>
     </table>
     {% else %}
@@ -186,85 +203,90 @@
     {% endif %}
   </div>
 
-  <!-- Top translucent text box -->
-  <div class="top-text">
-    Loan Requests
-  </div>
+  <div class="top-text">Loan Requests</div>
 
   <script>
-  function toggleSubDropdown() {
-  const selected = document.getElementById("loanFilter").value;
-  const workflowContainer = document.getElementById("subFilterContainer");
-  const productContainer = document.getElementById("productFilterContainer");
+    function toggleSubDropdown() {
+      const selected = document.getElementById("loanFilter").value;
+      const workflowContainer = document.getElementById("subFilterContainer");
+      const productContainer = document.getElementById("productFilterContainer");
+      const statusContainer = document.getElementById("statusFilterContainer");
 
-  workflowContainer.style.display = selected === "workflow" ? "block" : "none";
-  productContainer.style.display = selected === "loan_product" ? "block" : "none";
+      workflowContainer.style.display = selected === "workflow" ? "block" : "none";
+      productContainer.style.display = selected === "loan_product" ? "block" : "none";
+      statusContainer.style.display = selected === "status" ? "block" : "none";
 
-  if (selected !== "workflow") {
-    document.getElementById("workflowId").value = "";
-  }
+      if (selected !== "workflow") document.getElementById("workflowId").value = "";
+      if (selected !== "loan_product") document.getElementById("productId").value = "";
+      if (selected !== "status") document.getElementById("statusId").value = "";
 
-  if (selected !== "loan_product") {
-    document.getElementById("productId").value = "";
-  }
+      filterTable();
+    }
 
-  filterTable();
-}
+    function getColumnIndexByName(table, name) {
+      const headers = table.tHead.rows[0].cells;
+      for (let i = 0; i < headers.length; i++) {
+        if (headers[i].textContent.trim().toLowerCase() === name.toLowerCase()) {
+          return i;
+        }
+      }
+      return -1;
+    }
 
+    function filterTable() {
+      const filterType = document.getElementById("loanFilter").value;
+      const workflowFilter = document.getElementById("workflowId").value.toLowerCase();
+      const productFilter = document.getElementById("productId").value.toLowerCase();
+      const statusFilter = document.getElementById("statusId").value.toLowerCase();
+      const table = document.getElementById("loanTable");
+      if (!table) return;
 
-  function getColumnIndexByName(table, name) {
-    const headers = table.tHead.rows[0].cells;
-    for (let i = 0; i < headers.length; i++) {
-      if (headers[i].textContent.trim().toLowerCase() === name.toLowerCase()) {
-        return i;
+      const rows = table.tBodies[0].rows;
+      const workflowIndex = getColumnIndexByName(table, "workflow_name");
+      const productIndex = getColumnIndexByName(table, "product_name");
+      const statusIndex = getColumnIndexByName(table, "status");
+
+      for (let row of rows) {
+        let showRow = true;
+
+        if (filterType === "workflow" && workflowFilter && workflowIndex !== -1) {
+          const cell = row.cells[workflowIndex].textContent.toLowerCase();
+          showRow = cell.includes(workflowFilter);
+        }
+
+        if (filterType === "loan_product" && productFilter && productIndex !== -1) {
+          const cell = row.cells[productIndex].textContent.toLowerCase();
+          showRow = cell.includes(productFilter);
+        }
+
+        if (filterType === "status" && statusFilter && statusIndex !== -1) {
+          const cell = row.cells[statusIndex].textContent.toLowerCase();
+          showRow = cell.includes(statusFilter);
+        }
+
+        row.style.display = showRow ? "" : "none";
       }
     }
-    return -1;
-  }
 
-  function filterTable() {
-  const filterType = document.getElementById("loanFilter").value;
-  const workflowFilter = document.getElementById("workflowId").value.toLowerCase();
-  const productFilter = document.getElementById("productId").value.toLowerCase();
-  const table = document.getElementById("loanTable");
-  if (!table) return;
+    document.addEventListener("DOMContentLoaded", function () {
+  toggleSubDropdown();
+  document.getElementById("loanFilter").addEventListener("change", toggleSubDropdown);
+  document.getElementById("workflowId").addEventListener("change", filterTable);
+  document.getElementById("productId").addEventListener("change", filterTable);
+  document.getElementById("statusId").addEventListener("change", filterTable);
 
-  const rows = table.tBodies[0].rows;
-  const workflowIndex = getColumnIndexByName(table, "workflow_name");
-  const productIndex = getColumnIndexByName(table, "product_name");  // Adjust column name as needed
-
-  for (let row of rows) {
-    let showRow = true;
-
-    if (filterType === "workflow" && workflowFilter && workflowIndex !== -1) {
-      const cell = row.cells[workflowIndex].textContent.toLowerCase();
-      showRow = cell.includes(workflowFilter);
-    }
-
-    if (filterType === "loan_product" && productFilter && productIndex !== -1) {
-      const cell = row.cells[productIndex].textContent.toLowerCase();
-      showRow = cell.includes(productFilter);
-    }
-
-    row.style.display = showRow ? "" : "none";
-  }
-}
-
-
-  document.addEventListener("DOMContentLoaded", function () {
-    toggleSubDropdown();
-
-    document.getElementById("loanFilter").addEventListener("change", () => {
-      toggleSubDropdown();
-      filterTable();
+  // ✅ Moved inside DOMContentLoaded
+  document.querySelectorAll(".loan-row").forEach(row => {
+    row.addEventListener("click", () => {
+      const id = row.getAttribute("data-id");
+      if (id) {
+        window.location.href = `/application/${id}`;
+      }
     });
-
-    document.getElementById("workflowId").addEventListener("change", filterTable);
-    document.getElementById("productId").addEventListener("change", filterTable);
-
   });
-</script>
+});
 
 
+  </script>
 </body>
 </html>

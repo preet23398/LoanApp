@@ -60,9 +60,9 @@ button:hover {
   background-color: #0056b3;
 }
 
-.error {
+.error-message {
   color: red;
-  text-align: center;
-  margin-top: 8px;
-  font-size: 0.85rem;
+  font-weight: bold;
+  margin-top: 10px;
 }
+

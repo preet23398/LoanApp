@@ -96,7 +96,7 @@
   <!-- Translucent dashboard (on top of white box) -->
   <div class="dashboard">
     <h2>Dashboard</h2>
-    <a href="#">Homepage</a>
+    <a href="{{ url_for('homepage') }}">Homepage</a>
     <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
     <a href="{{ url_for('statistics') }}">Statistics</a>
     <a href="#">Alerts</a>
@@ -109,7 +109,7 @@
 
     <!-- Top translucent text box -->
   <div class="top-text">
-    Loan Management Homepage
+    Statistics
   </div>
 
 </body>

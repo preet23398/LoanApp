@@ -16,10 +16,31 @@
       <input type="password" name="password" required />
 
       <button type="submit">Log In</button>
-      {% if error %}
-        <p class="error">{{ error }}</p>
-      {% endif %}
+  {% if error %}
+  <p id="error-msg" class="error-message" style="color: red; cursor: pointer;">
+    Wrong Password entered. Click here to verify with OTP.
+  </p>
+{% endif %}
+
+
+</form>
+
     </form>
   </div>
+
+  <script>
+  const errorMsg = document.getElementById('error-msg');
+  if (errorMsg) {
+    errorMsg.addEventListener('click', function(event) {
+      event.preventDefault(); // prevent any default action
+      // Redirect to forgot_password page
+      window.location.href = "{{ url_for('forgot_password') }}";
+    });
+  }
+</script>
+
+
 </body>
+
+
 </html>
