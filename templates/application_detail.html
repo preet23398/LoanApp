@@ -242,6 +242,7 @@
   </style>
 </head>
 <body>
+    
 
   <!-- Left Dashboard -->
   <div class="dashboard">
@@ -279,33 +280,26 @@
       <h2>Workflow Stages</h2>
       <ul>
         {% for stage in stages %}
-          <li class="{% if stage.stage_id|string == current_stage_id|string %}active-stage{% endif %}">
-
+          <li class="{% if stage.stage_order <= current_stage_order %}active-stage{% endif %}">
             <span class="stage-id">{{ stage.stage_order }}</span>
             <span class="stage-name">{{ stage.stage_name }}</span>
           </li>
         {% endfor %}
       </ul>
 
-      <!-- Update form -->
-      <form id="update-stage-form" method="POST" action="{{ url_for('update_stage', application_id=application.application_id) }}">
-        <select name="new_stage_id" id="stage-select" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; display: none; margin-top: 15px;">
-          {% for stage in stages %}
-            <option value="{{ stage.stage_id }}" {% if stage.stage_id == current_stage_id %}selected{% endif %}>{{ stage.stage_name }}</option>
-          {% endfor %}
-        </select>
-        <div style="margin-top: 10px;">
-          <button type="button" id="update-stage-btn" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #28a745; background-color: #28a745; color: white; cursor: pointer;">
-            Update Stage
-          </button>
-          <button type="submit" id="submit-btn" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #007bff; background-color: #007bff; color: white; cursor: pointer; display: none; margin-left: 10px;">
-            Save
-          </button>
-          <button type="button" id="cancel-btn" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #dc3545; background-color: #dc3545; color: white; cursor: pointer; display: none; margin-left: 10px;">
-            Cancel
-          </button>
-        </div>
-      </form>
+      {% if current_stage_order < stages|length %}
+        <form method="POST" action="{{ url_for('update_stage', application_id=application.application_id) }}">
+  <input type="hidden" name="next_stage_order" value="{{ current_stage_order + 1 }}">
+  
+  <label for="remark">Remark (required):</label><br>
+  <textarea name="remark" id="remark" rows="3" cols="40" required></textarea><br><br>
+  
+  <button type="submit" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #007bff; background-color: #007bff; color: white; cursor: pointer; margin-top: 10px;">
+    Next Stage
+  </button>
+</form>
+
+      {% endif %}
     </div>
 
   </div>
@@ -313,12 +307,8 @@
   <!-- Status section below -->
   <div class="status-box">
     <div class="status-content">
-      <h2>Status for Current Workflow Stage</h2>
-      <ul class="status-list">
-        {% for status in statuses %}
-          <li class="{% if status == current_status %}current-status{% endif %}">{{ status.capitalize() }}</li>
-        {% endfor %}
-      </ul>
+      <h2>Status for Current Workflow Stage: "{{ current_status.capitalize() if current_status else 'N/A' }}"</h2>
+
 
       <form id="update-status-form" method="POST" action="{{ url_for('update_status', application_id=application.application_id) }}">
         <select name="new_status" id="status-select">
@@ -336,53 +326,33 @@
   </div>
 
   <script>
-    // Workflow stage update toggling
-    const updateBtn = document.getElementById('update-stage-btn');
-    const stageSelect = document.getElementById('stage-select');
-    const submitBtn = document.getElementById('submit-btn');
-    const cancelBtn = document.getElementById('cancel-btn');
+    document.addEventListener('DOMContentLoaded', () => {
+      // STATUS UPDATE TOGGLING
+      const updateStatusBtn = document.getElementById('update-status-btn');
+      const statusSelect = document.getElementById('status-select');
+      const submitStatusBtn = document.getElementById('submit-status-btn');
+      const cancelStatusBtn = document.getElementById('cancel-status-btn');
 
-    updateBtn.addEventListener('click', () => {
-      updateBtn.style.display = 'none';
-      stageSelect.style.display = 'inline-block';
-      submitBtn.style.display = 'inline-block';
-      cancelBtn.style.display = 'inline-block';
-    });
-
-    cancelBtn.addEventListener('click', () => {
-      updateBtn.style.display = 'inline-block';
-      stageSelect.style.display = 'none';
-      submitBtn.style.display = 'none';
-      cancelBtn.style.display = 'none';
-      // Reset dropdown to current_stage_id
-      stageSelect.value = "{{ current_stage_id }}";
-    });
-
-    // Status update toggling
-    const updateStatusBtn = document.getElementById('update-status-btn');
-    const statusSelect = document.getElementById('status-select');
-    const submitStatusBtn = document.getElementById('submit-status-btn');
-    const cancelStatusBtn = document.getElementById('cancel-status-btn');
-
-    // Initially hide the select and save/cancel buttons
-    statusSelect.style.display = 'none';
-    submitStatusBtn.style.display = 'none';
-    cancelStatusBtn.style.display = 'none';
-
-    updateStatusBtn.addEventListener('click', () => {
-      updateStatusBtn.style.display = 'none';
-      statusSelect.style.display = 'inline-block';
-      submitStatusBtn.style.display = 'inline-block';
-      cancelStatusBtn.style.display = 'inline-block';
-    });
-
-    cancelStatusBtn.addEventListener('click', () => {
-      updateStatusBtn.style.display = 'inline-block';
+      // Initially hide select and buttons
       statusSelect.style.display = 'none';
       submitStatusBtn.style.display = 'none';
       cancelStatusBtn.style.display = 'none';
-      // Reset dropdown to current_status
-      statusSelect.value = "{{ current_status }}";
+
+      updateStatusBtn.addEventListener('click', () => {
+        updateStatusBtn.style.display = 'none';
+        statusSelect.style.display = 'inline-block';
+        submitStatusBtn.style.display = 'inline-block';
+        cancelStatusBtn.style.display = 'inline-block';
+      });
+
+      cancelStatusBtn.addEventListener('click', () => {
+        updateStatusBtn.style.display = 'inline-block';
+        statusSelect.style.display = 'none';
+        submitStatusBtn.style.display = 'none';
+        cancelStatusBtn.style.display = 'none';
+        // Reset dropdown to current_status
+        statusSelect.value = "{{ current_status }}";
+      });
     });
   </script>
 

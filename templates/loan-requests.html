@@ -118,6 +118,20 @@
   <div class="content-box">
     <h1>All Loan Applications</h1>
 
+    <button id="newAppBtn" style="
+  margin-top: 20px;
+  padding: 12px 25px;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+">
+  New Loan Application
+</button>
+
     <!-- Filter Dropdown -->
     <div style="margin-bottom: 20px; text-align: left;">
       <label for="loanFilter">Filter Loans:</label>
@@ -285,6 +299,15 @@
     });
   });
 });
+
+    document.getElementById('newAppBtn').addEventListener('click', function() {
+      window.location.href = '/new_application';
+    });
+
+    const btn = document.getElementById('newAppBtn');
+    btn.addEventListener('mouseenter', () => btn.style.backgroundColor = '#0056b3');
+    btn.addEventListener('mouseleave', () => btn.style.backgroundColor = '#007bff');
+
 
 
   </script>

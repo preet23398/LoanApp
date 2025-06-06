@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>New Loan Application</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: url("/static/images/jeffrey-blum-7-gaPkhIgqs-unsplash.jpg") no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Segoe UI', sans-serif;
+      height: 100vh;
+      position: relative;
+      color: #333;
+    }
+
+    .back-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: background-color 0.3s;
+      z-index: 10;
+    }
+    .back-button:hover {
+      background-color: #0056b3;
+    }
+
+    .dashboard {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 350px;
+      background-color: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+      padding: 30px 20px;
+      color: black;
+      z-index: 2;
+    }
+
+    .dashboard h2 {
+      margin-bottom: 30px;
+      font-size: 1.5rem;
+      text-align: center;
+      color: white;
+    }
+
+    .dashboard a {
+      display: block;
+      color: black;
+      text-decoration: none;
+      margin: 15px 0;
+      padding: 25px 15px;
+      border-radius: 5px;
+      border: 1px solid black;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .dashboard a:hover {
+      background: #f0f0f0;
+      color: black;
+    }
+
+
+    .content-box {
+      position: absolute;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: white;
+      padding: 30px 40px;
+      border-radius: 10px;
+      text-align: left;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #222;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 15px 20px;
+      align-items: center;
+    }
+
+    label {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    input, select {
+      padding: 8px 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      grid-column: 1 / -1;
+      margin-top: 25px;
+      padding: 12px 20px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+    <div class="dashboard">
+    <h2>Dashboard</h2>
+    <a href="{{ url_for('homepage') }}">Homepage</a>
+    <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
+    <a href="{{ url_for('statistics') }}">Statistics</a>
+    <a href="{{ url_for('alerts') }}">Alerts</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </div>
+
+  <div class="content-box">
+    <h1>New Loan Application</h1>
+    <form method="POST" action="{{ url_for('new_application') }}">
+  <label for="client_id">Client</label>
+  <select id="client_id" name="client_id" required>
+  <option value="" disabled selected>Select Client ID</option>
+  {% for client in clients %}
+    <option value="{{ client.client_id }}">{{ client.client_id }}</option>
+  {% endfor %}
+</select>
+
+
+  <!-- Keep inputs for workflow_id, product_id, current_stage_id, status as before -->
+
+  <label for="workflow_id">Workflow</label>
+<select id="workflow_id" name="workflow_id" required onchange="updateProduct()">
+  <option value="" disabled selected>Select Workflow</option>
+  <option value="1">1 - Term Loan</option>
+  <option value="2">2 - Working Capital</option>
+  <option value="3">3 - Group Loan</option>
+  <option value="4">4 - Jewel/Gold Loan</option>
+  <option value="5">5 - Business Loan</option>
+  <option value="6">6 - Commercial Real Estate</option>
+</select>
+
+<label for="product_id">Product</label>
+<select id="product_id" name="product_id" disabled>
+  <option value="" disabled selected>Select Product</option>
+</select>
+
+  <label for="current_stage_id">Current Stage</label>
+<select name="current_stage_id" id="current_stage_id" required>
+  <option value="" disabled selected>Select Workflow First</option>
+</select>
+
+
+
+
+  <label for="status">Status</label>
+  <select id="status" name="status" required>
+    <option value="pending" selected>Pending</option>
+    <option value="approved">Approved</option>
+    <option value="rejected">Rejected</option>
+    <option value="disbursed">Disbursed</option>
+    <option value="closed">Closed</option>
+  </select>
+
+  <button type="submit">Submit Application</button>
+</form>
+
+  </div>
+
+  <script>
+  const productMap = {
+    1: { id: 1, name: "Term Loan Product" },
+    2: { id: 2, name: "Working Capital Product" },
+    3: { id: 3, name: "Group Loan Product" },
+    4: { id: 4, name: "Jewel/Gold Loan Product" },
+    5: { id: 5, name: "Business Loan Product" },
+    6: { id: 7, name: "Commercial Real Estate Product" }
+  };
+
+  const firstStageMap = {
+    1: { id: 1, name: "Application Submission" },
+    2: { id: 8, name: "Application Submission" },
+    3: { id: 13, name: "Application Submission" },
+    4: { id: 19, name: "Lead Generation" },
+    5: { id: 25, name: "Invoice Submission" },
+    6: { id: 30, name: "Application Submission" } // Placeholder stage for workflow 6
+  };
+
+  function updateProductAndStage() {
+    const workflowSelect = document.getElementById("workflow_id");
+    const productSelect = document.getElementById("product_id");
+    const stageSelect = document.getElementById("current_stage_id");
+    const selectedWorkflow = parseInt(workflowSelect.value);
+
+    // Update Product
+    if (productMap[selectedWorkflow]) {
+      const product = productMap[selectedWorkflow];
+      productSelect.innerHTML = `<option value="${product.id}" selected>${product.id} - ${product.name}</option>`;
+      productSelect.disabled = false;
+    } else {
+      productSelect.innerHTML = `<option value="" disabled selected>Select Product</option>`;
+      productSelect.disabled = true;
+    }
+
+    // Update Stage
+    if (firstStageMap[selectedWorkflow]) {
+      const stage = firstStageMap[selectedWorkflow];
+      stageSelect.innerHTML = `<option value="${stage.id}" selected>${stage.id} - ${stage.name}</option>`;
+    } else {
+      stageSelect.innerHTML = `<option value="" disabled selected>No Stages Available</option>`;
+    }
+  }
+
+  // Ensure this runs only after DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("workflow_id").addEventListener("change", updateProductAndStage);
+  });
+</script>
+
+
+
+</body>
+</html>

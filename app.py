@@ -34,7 +34,6 @@ def homepage():
         if not email or not phone:
             show_popup = True
 
-    # Render and return response with no-cache headers
     response = make_response(render_template('homepage.html', show_popup=show_popup))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -134,7 +133,6 @@ def logout():
 def application_detail(application_id):
     cursor = mysql.connection.cursor(dictionary=True)
 
-    # Get application details
     cursor.execute("SELECT * FROM loan_applications WHERE application_id = %s", (application_id,))
     application = cursor.fetchone()
 
@@ -144,77 +142,81 @@ def application_detail(application_id):
 
     workflow_id = application['workflow_id']
     current_stage_id = application['current_stage_id']
-    current_status = application.get('status')  # assuming 'status' column exists in loan_applications
+    current_status = application.get('status')
 
-    # Get all stages for this workflow
     cursor.execute("SELECT * FROM workflow_stages WHERE workflow_id = %s ORDER BY stage_order", (workflow_id,))
     stages = cursor.fetchall()
 
     cursor.close()
 
-    # List of possible statuses
-    statuses = ['pending', 'in progress', 'credit check', 'under review', 'approved']
+    current_stage = next((s for s in stages if s['stage_id'] == current_stage_id), None)
+    current_stage_order = current_stage['stage_order'] if current_stage else 0
+
+    statuses = ['pending', 'in progress', 'credit check', 'under review', 'approved', 'rejected']
 
     return render_template("application_detail.html", 
                            application=application, 
                            stages=stages, 
                            current_stage_id=current_stage_id,
+                           current_stage_order=current_stage_order,
                            statuses=statuses,
                            current_status=current_status)
 
-
 @app.route('/update_stage/<int:application_id>', methods=['POST'])
 def update_stage(application_id):
-    new_stage_id = request.form.get('new_stage_id')
-    
-    if not new_stage_id:
-        flash('No stage selected.', 'error')
-        return redirect(url_for('application_detail', application_id=application_id))
-    
-    try:
-        new_stage_id_int = int(new_stage_id)
-    except ValueError:
-        flash('Invalid stage selected.', 'error')
-        return redirect(url_for('application_detail', application_id=application_id))
+    next_order = request.form.get('next_stage_order')
+    remark = request.form.get('remark')
 
-    cursor = mysql.connection.cursor()
-    
-    # Optional: Verify the stage belongs to the workflow of this application
-    cursor.execute("SELECT workflow_id FROM loan_applications WHERE application_id = %s", (application_id,))
+    cursor = mysql.connection.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM loan_applications WHERE application_id = %s", (application_id,))
+    application = cursor.fetchone()
+    if not application:
+        cursor.close()
+        return "Application not found", 404
+
+    workflow_id = application['workflow_id']
+
+    username = session.get('username')
+    cursor.execute("SELECT company_name FROM users WHERE username = %s", (username,))
     result = cursor.fetchone()
-    if not result:
-        cursor.close()
-        flash('Application not found.', 'error')
-        return redirect(url_for('application_detail', application_id=application_id))
+    company_name = result['company_name'] if result else 'Unknown'
 
-    workflow_id = result[0]
+    try:
+        next_order_int = int(next_order)
+    except (TypeError, ValueError):
+        next_order_int = None
 
-    cursor.execute(
-        "SELECT COUNT(*) FROM workflow_stages WHERE stage_id = %s AND workflow_id = %s",
-        (new_stage_id_int, workflow_id)
-    )
-    count = cursor.fetchone()[0]
+    if next_order_int is not None:
+        cursor.execute("SELECT * FROM workflow_stages WHERE workflow_id = %s ORDER BY stage_order", (workflow_id,))
+        stages = cursor.fetchall()
+        next_stage = next((s for s in stages if s['stage_order'] == next_order_int), None)
 
-    if count == 0:
-        cursor.close()
-        flash('Selected stage is not valid for this workflow.', 'error')
-        return redirect(url_for('application_detail', application_id=application_id))
-    
-    # Update the application current_stage_id
-    cursor.execute(
-        "UPDATE loan_applications SET current_stage_id = %s WHERE application_id = %s",
-        (new_stage_id_int, application_id)
-    )
-    mysql.connection.commit()
+        if next_stage:
+            new_stage_id = next_stage['stage_id']
+
+            cursor.execute("""
+                UPDATE loan_applications SET current_stage_id = %s, status = %s WHERE application_id = %s
+                """, (new_stage_id, 'pending', application_id))
+
+
+            cursor.execute("""
+                INSERT INTO application_stage_history (application_id, stage_id, updated_by, updated_at, remarks)
+                VALUES (%s, %s, %s, NOW(), %s)
+            """, (application_id, new_stage_id, company_name, remark))
+
+            mysql.connection.commit()
+            cursor.close()
+            return redirect(url_for('application_detail', application_id=application_id))
+
     cursor.close()
-
-    flash('Stage updated successfully!', 'success')
+    flash('Invalid stage selected.', 'error')
     return redirect(url_for('application_detail', application_id=application_id))
 
 @app.route('/update_status/<int:application_id>', methods=['POST'])
 def update_status(application_id):
     new_status = request.form.get('new_status')
-    allowed_statuses = ['pending', 'in progress', 'credit check', 'under review', 'approved']
+    allowed_statuses = ['pending', 'in progress', 'credit check', 'under review', 'approved', 'rejected']
 
     if new_status not in allowed_statuses:
         flash('Invalid status selected.', 'error')
@@ -222,12 +224,18 @@ def update_status(application_id):
 
     cursor = mysql.connection.cursor()
 
-    # Optional: Verify application exists
     cursor.execute("SELECT application_id FROM loan_applications WHERE application_id = %s", (application_id,))
     if not cursor.fetchone():
         cursor.close()
         flash('Application not found.', 'error')
         return redirect(url_for('application_detail', application_id=application_id))
+
+    if new_status == 'rejected':
+        cursor.execute("DELETE FROM loan_applications WHERE application_id = %s", (application_id,))
+        mysql.connection.commit()
+        cursor.close()
+        flash('Application rejected and deleted successfully.', 'success')
+        return redirect(url_for('loan_requests'))  
 
     cursor.execute(
         "UPDATE loan_applications SET status = %s WHERE application_id = %s",
@@ -242,9 +250,68 @@ def update_status(application_id):
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
-    # render your forgot_password.html here
     return render_template('forgot_password.html')
 
+
+@app.route('/new_application', methods=['GET', 'POST'])
+def new_application():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+
+    cursor = mysql.connection.cursor(dictionary=True)
+
+    if request.method == 'POST':
+        print("POST received")
+        client_id = request.form.get('client_id')
+        workflow_id = request.form.get('workflow_id')
+        product_id = request.form.get('product_id')
+        current_stage_id = request.form.get('current_stage_id')
+        status = request.form.get('status')
+        print(f"Received: client_id={client_id}, workflow_id={workflow_id}, product_id={product_id}, current_stage_id={current_stage_id}, status={status}")
+
+        if not all([client_id, workflow_id, product_id, current_stage_id, status]):
+            cursor.execute("SELECT client_id FROM client")
+            clients = cursor.fetchall()
+            cursor.close()
+            error = "All fields are required."
+            return render_template('new_application.html', clients=clients, error=error)
+
+        try:
+            client_id = int(client_id)
+            workflow_id = int(workflow_id)
+            product_id = int(product_id)
+            current_stage_id = int(current_stage_id)
+        except ValueError:
+            cursor.execute("SELECT client_id FROM client")
+            clients = cursor.fetchall()
+            cursor.close()
+            error = "Invalid numeric values in form."
+            return render_template('new_application.html', clients=clients, error=error)
+
+        try:
+            sql = """
+                INSERT INTO loan_applications 
+                (user_id, client_id, workflow_id, product_id, current_stage_id, status) 
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql, (user_id, client_id, workflow_id, product_id, current_stage_id, status))
+            mysql.connection.commit()
+            cursor.close()
+            print("Insert successful, redirecting to loan_requests")
+            return redirect(url_for('loan_requests'))
+        except Exception as err:
+            print(f"DB insert error: {err}")
+            cursor.execute("SELECT client_id FROM client")
+            clients = cursor.fetchall()
+            cursor.close()
+            error = f"Database error: {err}"
+            return render_template('new_application.html', clients=clients, error=error)
+
+    cursor.execute("SELECT client_id FROM client")
+    clients = cursor.fetchall()
+    cursor.close()
+    return render_template('new_application.html', clients=clients)
 
 if __name__ == '__main__':
     app.run(debug=True)
