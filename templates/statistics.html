@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Welcome to Loan Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       margin: 0;
@@ -14,28 +15,12 @@
       position: relative;
     }
 
-    /* Right-side white content box 
-    .content-box {
-      position: absolute;
-      top: 20%;
-      left: 75%;
-      transform: translateX(-50%);
-      background-color: white;
-      padding: 1000px;
-      border-radius: 10px;
-      text-align: center;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-      color: #333;
-      max-width: 1500px;
-    }
-    */
     h1 {
       font-size: 2.2rem;
       margin-bottom: 25px;
       color: #222;
     }
 
-    /* Translucent vertical dashboard */
     .dashboard {
       position: fixed;
       top: 0;
@@ -74,7 +59,6 @@
       color: black;
     }
 
-    /* Small translucent text box at the top */
     .top-text {
       position: fixed;
       top: 10px;
@@ -89,28 +73,161 @@
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
     }
 
+    .content-box {
+      position: absolute;
+      top: 150px;
+      left: 475px;
+      right: 75px;
+      bottom: 15px;
+      border-radius: 10px;
+      background-color: white;
+      padding: 40px 60px;
+      text-align: left;
+      box-shadow: none;
+      color: #333;
+      font-size: 1.2rem;
+      overflow-y: auto;
+    }
+
+    .chart-container {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      margin-top: 50px;
+    }
+
+    canvas {
+      max-width: 400px;
+      max-height: 400px;
+      margin-bottom: 40px;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Translucent dashboard (on top of white box) -->
-  <div class="dashboard">
-    <h2>Dashboard</h2>
-    <a href="{{ url_for('homepage') }}">Homepage</a>
-    <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
-    <a href="{{ url_for('statistics') }}">Statistics</a>
-    <a href="#">Alerts</a>
-    <a href="{{ url_for('logout') }}">Logout</a>
+<div class="dashboard">
+  <h2>Dashboard</h2>
+  <a href="{{ url_for('homepage') }}">Homepage</a>
+  <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
+  <a href="{{ url_for('statistics') }}">Statistics</a>
+  <a href="#">Alerts</a>
+  <a href="{{ url_for('logout') }}">Logout</a>
+</div>
+
+<div class="content-box" style="
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    padding: 40px 60px;
+    color: #333;
+    font-size: 1.2rem;
+    border-radius: 10px;
+    background-color: white;
+    position: absolute;
+    top: 150px;
+    left: 475px;
+    right: 75px;
+    bottom: 15px;
+">
+
+  <!-- Left side: Text stats -->
+  <div style="flex: 1; min-width: 300px;">
+    <p style="font-weight: 500; margin-top: 0;">Total Loan Applications: {{ total_applications }}</p>
+
+    <p style="margin-top: 35px; font-weight: 500;">Applications by Workflow Type:</p>
+    <ul style="padding-left: 20px;">
+      {% for wf in workflow_counts %}
+        <li><strong>{{ wf.workflow_name }}:</strong> {{ wf.count }}</li>
+      {% endfor %}
+    </ul>
+
+    <p style="margin-top: 35px; font-weight: 500;">Applications by Status:</p>
+    <ul style="padding-left: 20px;">
+      {% for s in status_counts %}
+        <li><strong>{{ s.status | capitalize }}:</strong> {{ s.count }}</li>
+      {% endfor %}
+      <li><strong>Rejected:</strong> {{ rejected_count or 0 }}</li>
+    </ul>
+
+    <p style="margin-top: 30px; font-weight: 500;">
+      Stage where applications get stuck most: 
+      <strong>
+        {% if stuck_stage %}
+          {{ stuck_stage.stage_name }} (Avg. {{ stuck_stage.avg_duration_hours }} hours)
+        {% else %}
+          None
+        {% endif %}
+      </strong>
+    </p>
+
+    <p>Applications Completed Workflow: {{ completed_count }}</p>
   </div>
 
-  <!-- White content box on the right -->
-  <div class="content-box">
+  <!-- Right side: Pie charts -->
+  <div style="flex: 1; min-width: 300px;">
+    <canvas id="workflowChart" style="max-width: 100%;"></canvas>
+    <canvas id="statusChart" style="max-width: 100%; margin-top: 40px;"></canvas>
   </div>
 
-    <!-- Top translucent text box -->
-  <div class="top-text">
-    Statistics
-  </div>
+</div>
+
+
+<div class="top-text">
+  Statistics
+</div>
+
+<script>
+  const workflowChartLabels = {{ workflow_counts | map(attribute='workflow_name') | list | tojson }};
+  const workflowChartData = {{ workflow_counts | map(attribute='count') | list | tojson }};
+
+  const statusChartLabels = {{ status_counts | map(attribute='status') | list | tojson }};
+  const statusChartData = {{ status_counts | map(attribute='count') | list | tojson }};
+  statusChartLabels.push("Rejected");
+  statusChartData.push({{ rejected_count or 0 }});
+
+  new Chart(document.getElementById('workflowChart'), {
+    type: 'pie',
+    data: {
+      labels: workflowChartLabels,
+      datasets: [{
+        label: "Applications by Workflow",
+        data: workflowChartData,
+        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#a9ebc6', '#f781bf', '#9966ff']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Applications by Workflow Type'
+        }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('statusChart'), {
+    type: 'pie',
+    data: {
+      labels: statusChartLabels.map(label => label.charAt(0).toUpperCase() + label.slice(1)),
+      datasets: [{
+        label: "Applications by Status",
+        data: statusChartData,
+        backgroundColor: ['#4bc0c0', '#ff9f40', '#9966ff', '#ff6384', '#c9cbcf', '#36a2eb']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Applications by Status'
+        }
+      }
+    }
+  });
+</script>
+
 
 </body>
 </html>

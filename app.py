@@ -114,10 +114,113 @@ def loan_requests():
 
     return render_template('loan-requests.html', applications=applications)
 
-
 @app.route('/statistics')
 def statistics():
-    return render_template('statistics.html')
+    user_idd = session.get('user_id')
+    cursor = mysql.connection.cursor(dictionary=True)
+
+    # Total applications
+    cursor.execute("SELECT COUNT(*) AS count FROM loan_applications WHERE user_id = %s", (user_idd,))
+    total_applications = cursor.fetchone()['count']
+
+    # Workflow counts
+    cursor.execute("""
+        SELECT w.workflow_id, w.name AS workflow_name, COUNT(la.application_id) AS count
+        FROM workflows w
+        LEFT JOIN loan_applications la 
+            ON la.workflow_id = w.workflow_id AND la.user_id = %s
+        GROUP BY w.workflow_id, w.name
+    """, (user_idd,))
+    workflow_counts = cursor.fetchall()
+
+    # Status counts (excluding rejected)
+    all_statuses = ['pending', 'in progress', 'credit check', 'under review', 'approved']
+    placeholders = ','.join(['%s'] * len(all_statuses))
+    query = f"""
+        SELECT status, COUNT(*) AS count
+        FROM loan_applications
+        WHERE user_id = %s AND status IN ({placeholders})
+        GROUP BY status
+    """
+    cursor.execute(query, (user_idd, *all_statuses))
+    raw_status_counts = cursor.fetchall()
+    status_dict = {row['status']: row['count'] for row in raw_status_counts}
+    status_counts = [{'status': s, 'count': status_dict.get(s, 0)} for s in all_statuses]
+
+    # Rejected count directly from rejected_applications table
+    cursor.execute("""
+        SELECT COUNT(*) AS count 
+        FROM rejected_applications
+        WHERE user_id = %s
+    """, (user_idd,))
+    rejected_count = cursor.fetchone()['count'] or 0
+
+    # Stuck stage (longest time spent)
+    cursor.execute("""
+        SELECT 
+            ws.stage_name,
+            ROUND(AVG(TIMESTAMPDIFF(MINUTE, ash.updated_at, next_stage.next_updated_at) / 60), 2) AS avg_duration_hours
+        FROM 
+            application_stage_history ash
+        JOIN 
+            workflow_stages ws ON ash.stage_id = ws.stage_id
+        JOIN 
+            loan_applications la ON ash.application_id = la.application_id
+        JOIN (
+            SELECT 
+                history_id,
+                application_id,
+                updated_at,
+                LEAD(updated_at) OVER (PARTITION BY application_id ORDER BY updated_at) AS next_updated_at
+            FROM application_stage_history
+        ) next_stage ON ash.history_id = next_stage.history_id
+        WHERE 
+            next_stage.next_updated_at IS NOT NULL
+            AND la.user_id = %s
+        GROUP BY ash.stage_id
+        ORDER BY avg_duration_hours DESC
+        LIMIT 1
+    """, (user_idd,))
+
+    stuck_stage = cursor.fetchone()
+
+    # Count of completed applications
+    cursor.execute("""
+        SELECT COUNT(DISTINCT ash.application_id) AS completed_applications
+        FROM application_stage_history ash
+        JOIN loan_applications la ON ash.application_id = la.application_id
+        JOIN (
+            SELECT workflow_id, MAX(stage_order) AS last_mandatory_order
+            FROM workflow_stages
+            WHERE is_mandatory = 1
+            GROUP BY workflow_id
+        ) ws_last ON la.workflow_id = ws_last.workflow_id
+        JOIN (
+            SELECT application_id, MAX(ws.stage_order) AS max_stage_order
+            FROM application_stage_history ash2
+            JOIN workflow_stages ws ON ash2.stage_id = ws.stage_id
+            GROUP BY application_id
+        ) app_stage ON ash.application_id = app_stage.application_id
+        WHERE ash.application_id = app_stage.application_id
+          AND app_stage.max_stage_order >= ws_last.last_mandatory_order
+          AND la.user_id = %s;
+    """, (user_idd,))
+    completed_count = cursor.fetchone()['completed_applications']
+
+    cursor.close()
+
+    return render_template(
+        'statistics.html',
+        total_applications=total_applications,
+        workflow_counts=workflow_counts,
+        status_counts=status_counts,   # no rejected here
+        rejected_count=rejected_count, # separate rejected count
+        stuck_stage=stuck_stage,
+        completed_count=completed_count
+    )
+
+
+
 
 @app.route('/alerts')
 def alerts():
@@ -231,21 +334,24 @@ def update_status(application_id):
         return redirect(url_for('application_detail', application_id=application_id))
 
     if new_status == 'rejected':
-        cursor.execute("DELETE FROM loan_applications WHERE application_id = %s", (application_id,))
-        mysql.connection.commit()
-        cursor.close()
-        flash('Application rejected and deleted successfully.', 'success')
-        return redirect(url_for('loan_requests'))  
+    # Get user_id of the application
+        cursor.execute("SELECT user_id FROM loan_applications WHERE application_id = %s", (application_id,))
+        user_row = cursor.fetchone()
+        if user_row:
+            user_id = user_row[0]
 
-    cursor.execute(
-        "UPDATE loan_applications SET status = %s WHERE application_id = %s",
-        (new_status, application_id)
-    )
+        # Insert into rejected_applications
+            cursor.execute(
+            "INSERT INTO rejected_applications (user_id, application_id) VALUES (%s, %s)",
+            (user_id, application_id)
+            )
+
+    # Now delete the application
+    cursor.execute("DELETE FROM loan_applications WHERE application_id = %s", (application_id,))
     mysql.connection.commit()
     cursor.close()
-
-    flash('Status updated successfully!', 'success')
-    return redirect(url_for('application_detail', application_id=application_id))
+    flash('Application rejected and deleted successfully.', 'success')
+    return redirect(url_for('loan_requests'))
 
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
