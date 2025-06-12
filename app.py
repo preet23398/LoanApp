@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_mysql_connector import MySQL
 from flask import make_response
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'your-very-secret-key-here'
@@ -219,9 +220,6 @@ def statistics():
         completed_count=completed_count
     )
 
-
-
-
 @app.route('/alerts')
 def alerts():
     return render_template('alerts.html')
@@ -374,10 +372,11 @@ def new_application():
         product_id = request.form.get('product_id')
         current_stage_id = request.form.get('current_stage_id')
         status = request.form.get('status')
+
         print(f"Received: client_id={client_id}, workflow_id={workflow_id}, product_id={product_id}, current_stage_id={current_stage_id}, status={status}")
 
         if not all([client_id, workflow_id, product_id, current_stage_id, status]):
-            cursor.execute("SELECT client_id FROM client")
+            cursor.execute("SELECT * FROM client")
             clients = cursor.fetchall()
             cursor.close()
             error = "All fields are required."
@@ -389,7 +388,7 @@ def new_application():
             product_id = int(product_id)
             current_stage_id = int(current_stage_id)
         except ValueError:
-            cursor.execute("SELECT client_id FROM client")
+            cursor.execute("SELECT * FROM client")
             clients = cursor.fetchall()
             cursor.close()
             error = "Invalid numeric values in form."
@@ -408,16 +407,79 @@ def new_application():
             return redirect(url_for('loan_requests'))
         except Exception as err:
             print(f"DB insert error: {err}")
-            cursor.execute("SELECT client_id FROM client")
+            cursor.execute("SELECT * FROM client")
             clients = cursor.fetchall()
             cursor.close()
             error = f"Database error: {err}"
             return render_template('new_application.html', clients=clients, error=error)
 
-    cursor.execute("SELECT client_id FROM client")
+    # GET request: fetch all client details (not just IDs)
+    cursor.execute("SELECT * FROM client")
     clients = cursor.fetchall()
     cursor.close()
     return render_template('new_application.html', clients=clients)
+
+from datetime import datetime
+
+@app.route('/save_client_info', methods=['POST'])
+def save_client_info():
+    form = request.form
+    client_data = {
+        "first_name": form.get("first_name"),
+        "middle_name": form.get("middle_name"),
+        "last_name": form.get("last_name"),
+        "gender": form.get("gender"),
+        "dob": form.get("dob"),
+        "age": form.get("age"),
+        "marital_status": form.get("marital_status"),
+        "father_name": form.get("father_name"),
+        "mother_name": form.get("mother_name"),
+        "spouse_name": form.get("spouse_name"),
+        "education": form.get("education"),
+        "phone": form.get("phone"),
+        "email": form.get("email")
+    }
+
+    doc_type = form.get("doc_type")
+    file_path = form.get("file_path")
+    application_id = form.get("application_id") or None
+    client_id = form.get("client_id") or None
+
+    cursor = mysql.connection.cursor(dictionary=True)
+
+    # Check if document already exists (doc_type + file_path)
+    cursor.execute("""
+        SELECT * FROM application_documents
+        WHERE doc_type = %s AND file_path = %s
+    """, (doc_type, file_path))
+    existing_doc = cursor.fetchone()
+
+    if existing_doc:
+        flash("Warning: This document is already uploaded for another client/application.", "warning")
+        cursor.close()
+        return redirect(url_for('homepage'))
+
+    # Insert into client table
+    cursor.execute("""
+        INSERT INTO client 
+        (first_name, middle_name, last_name, gender, dob, age, marital_status, father_name, mother_name, spouse_name, education, phone, email)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, tuple(client_data.values()))
+    new_client_id = cursor.lastrowid
+
+    # Insert into application_documents table
+    cursor.execute("""
+        INSERT INTO application_documents 
+        (application_id, doc_type, file_path, client_id, uploaded_at)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (application_id, doc_type, file_path, new_client_id, datetime.now()))
+
+    mysql.connection.commit()
+    cursor.close()
+
+    flash("Client info and document saved successfully.", "success")
+    return redirect(url_for('homepage'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
