@@ -163,25 +163,26 @@
   <!-- Form Start -->
   <form method="POST" action="{{ url_for('save_client_info') }}">
     
-    <!-- Client Details Section -->
-    <h2 style="font-size: 1.3rem; font-weight: bold; margin-bottom: 15px;">Client Details</h2>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 40px;">
-      <input type="text" name="first_name" placeholder="First Name" required>
-      <input type="text" name="middle_name" placeholder="Middle Name">
-      <input type="text" name="last_name" placeholder="Last Name" required>
-      <input type="text" name="gender" placeholder="Gender" required>
-      <input type="date" name="dob" placeholder="Date of Birth" required>
-      <input type="number" name="age" placeholder="Age" min="0" required>
-      <input type="text" name="marital_status" placeholder="Marital Status">
-      <input type="text" name="father_name" placeholder="Father's Name">
-      <input type="text" name="mother_name" placeholder="Mother's Name">
-      <input type="text" name="spouse_name" placeholder="Spouse Name">
-      <input type="text" name="education" placeholder="Education">
-      <input type="tel" name="phone" placeholder="Phone Number">
-      <input type="email" name="email" placeholder="Email">
-    </div>
+  <!-- Client Details Section -->
 
-    <!-- Application Documents Section -->
+  <h2 style="font-size: 1.3rem; font-weight: bold; margin-bottom: 15px;">Client Details</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 40px;">
+    <input type="text" name="first_name" value="{{ client_data.first_name or '' }}" placeholder="First Name" required>
+    <input type="text" name="middle_name" value="{{ client_data.middle_name or '' }}" placeholder="Middle Name">
+    <input type="text" name="last_name" value="{{ client_data.last_name or '' }}" placeholder="Last Name" required>
+    <input type="text" name="gender" value="{{ client_data.gender or '' }}" placeholder="Gender" required>
+    <input type="date" name="dob" value="{{ client_data.dob or '' }}" placeholder="Date of Birth" required>
+    <input type="number" name="age" value="{{ client_data.age or '' }}" placeholder="Age" min="0" required>
+    <input type="text" name="marital_status" value="{{ client_data.marital_status or '' }}" placeholder="Marital Status">
+    <input type="text" name="father_name" value="{{ client_data.father_name or '' }}" placeholder="Father's Name">
+    <input type="text" name="mother_name" value="{{ client_data.mother_name or '' }}" placeholder="Mother's Name">
+    <input type="text" name="spouse_name" value="{{ client_data.spouse_name or '' }}" placeholder="Spouse Name">
+    <input type="text" name="education" value="{{ client_data.education or '' }}" placeholder="Education">
+    <input type="tel" name="phone" value="{{ client_data.phone or '' }}" placeholder="Phone Number">
+    <input type="email" name="email" value="{{ client_data.email or '' }}" placeholder="Email">
+  </div>
+
+  <!-- Application Documents Section -->
 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px; margin-bottom: 10px;">
   <h2 style="font-size: 1.3rem; font-weight: bold; margin: 0;">Application Documents</h2>
   <button type="button" id="add-doc-btn" style="padding: 6px 12px; font-size: 0.9rem; border-radius: 5px; background-color: #007bff; color: white; border: none; cursor: pointer;">
@@ -189,90 +190,156 @@
   </button>
 </div>
 
+<!-- Dynamic container for all document entries -->
 <div id="document-fields-container" style="margin-bottom: 20px;">
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 10px;">
-    <input type="text" name="doc_type" placeholder="Document Type (e.g. PAN, Aadhaar)" required style="width: 100%;" />
-    <input type="text" name="file_path" placeholder="File Path or Upload Reference" required style="width: 100%;" />
-  </div>
-</div>
 
-
-
-
-    <!-- Hidden application_id if available -->
-    <input type="hidden" name="application_id" value="{{ application_id if application_id else '' }}">
-
-    <!-- Submit Button -->
-    <div style="margin-top: 30px;">
-      <button type="submit">Save Client Info</button>
+  <!-- Default single document entry -->
+  <div id="document-fields-container" style="margin-bottom: 20px;">
+  {% if document_data %}
+    {% for doc in document_data %}
+      <div class="document-entry" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 10px;">
+        <input type="text" name="doc_type[]" value="{{ doc[0] }}" placeholder="Document Type (e.g. PAN, Aadhaar)" required style="width: 100%;" />
+        <input type="text" name="file_path[]" value="{{ doc[1] }}" placeholder="File Path or Upload Reference" required style="width: 100%;" />
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="document-entry" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 10px;">
+      <input type="text" name="doc_type[]" placeholder="Document Type (e.g. PAN, Aadhaar)" required style="width: 100%;" />
+      <input type="text" name="file_path[]" placeholder="File Path or Upload Reference" required style="width: 100%;" />
     </div>
-  </form>
+  {% endif %}
+</div>
+
+</div>
+
+<!-- Hidden application_id if available -->
+<input type="hidden" name="application_id" value="{{ application_id or '' }}">
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      {% if category == 'error' %}
+        <div style="color: #d8000c; background-color: #ffbaba; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+          {{ message }}
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+
+<!-- Submit Button -->
+<div style="margin-top: 30px;">
+  <button type="submit">Save Client Info</button>
+</div>
+</form>
+
 </div>
 
 
-  <!-- Inject client data safely -->
-  <script id="client-data-json" type="application/json">
-  {{ clients | tojson }}
-</script>
+  <script>
+    document.getElementById('existing-client-checkbox').addEventListener('change', function () {
+    const dropdown = document.getElementById('client-id-dropdown');
+    dropdown.disabled = !this.checked;
 
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const checkbox = document.getElementById("existing-client-checkbox");
-    const dropdown = document.getElementById("client-id-dropdown");
-    const docContainer = document.getElementById("document-fields-container");
-    const addDocBtn = document.getElementById("add-doc-btn");
+    // Optionally clear client data if unchecked
+    if (!this.checked) {
+      dropdown.value = "";
+      const inputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="tel"], input[type="email"], input[type="date"]');
+      inputs.forEach(input => input.value = '');
+    }
+  });
+  document.getElementById('client-id-dropdown').addEventListener('change', function () {
+  const clientId = this.value;
 
-    checkbox.addEventListener("change", () => {
-      dropdown.disabled = !checkbox.checked;
-    });
-
-    const clientData = JSON.parse(document.getElementById("client-data-json").textContent);
-
-    dropdown.addEventListener("change", () => {
-      const selectedId = parseInt(dropdown.value);
-      const selectedClient = clientData.find(c => c.client_id === selectedId);
-
-      const fillField = (name, value) => {
-        const field = document.querySelector(`[name="${name}"]`);
-        if (field) field.value = value || '';
-      };
-
-      if (selectedClient) {
-        fillField("first_name", selectedClient.first_name);
-        fillField("middle_name", selectedClient.middle_name);
-        fillField("last_name", selectedClient.last_name);
-        fillField("gender", selectedClient.gender);
-        fillField("dob", selectedClient.dob ? new Date(selectedClient.dob).toISOString().split('T')[0] : '');
-        fillField("age", selectedClient.age);
-        fillField("marital_status", selectedClient.marital_status);
-        fillField("father_name", selectedClient.father_name);
-        fillField("mother_name", selectedClient.mother_name);
-        fillField("spouse_name", selectedClient.spouse_name);
-        fillField("education", selectedClient.education);
-        fillField("phone", selectedClient.phone);
-        fillField("email", selectedClient.email);
-
-        // Fetch and display documents
-        fetch(`/get_client_documents/${selectedId}`)
-          .then(response => response.text())
-          .then(html => {
-            docContainer.innerHTML = html;
-          });
+  fetch(`/get_client_data/${clientId}`)
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to fetch client data");
+      return res.json();
+    })
+    .then(data => {
+      if (data.error) {
+        alert(data.error);
+        return;
       }
-    });
 
-    // Add More? button to add extra document fields
-    addDocBtn.addEventListener("click", () => {
-      const docHtml = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 10px;">
+      // Directly use top-level fields from data (no `data.client`)
+      document.querySelector('input[name="first_name"]').value = data.first_name || '';
+      document.querySelector('input[name="middle_name"]').value = data.middle_name || '';
+      document.querySelector('input[name="last_name"]').value = data.last_name || '';
+      document.querySelector('input[name="gender"]').value = data.gender || '';
+      
+      const dobInput = document.querySelector('input[name="dob"]');
+      if (data.dob) {
+        const parsedDate = new Date(data.dob);
+        const yyyy = parsedDate.getFullYear();
+        const mm = String(parsedDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(parsedDate.getDate()).padStart(2, '0');
+        dobInput.value = `${yyyy}-${mm}-${dd}`;
+      } else {
+        dobInput.value = '';
+      }
+
+      document.querySelector('input[name="age"]').value = data.age || '';
+      document.querySelector('input[name="marital_status"]').value = data.marital_status || '';
+      document.querySelector('input[name="father_name"]').value = data.father_name || '';
+      document.querySelector('input[name="mother_name"]').value = data.mother_name || '';
+      document.querySelector('input[name="spouse_name"]').value = data.spouse_name || '';
+      document.querySelector('input[name="education"]').value = data.education || '';
+      document.querySelector('input[name="phone"]').value = data.phone || '';
+      document.querySelector('input[name="email"]').value = data.email || '';
+
+      // Document Autofill Section
+      const docContainer = document.getElementById('document-fields-container');
+      docContainer.innerHTML = ''; // Clear existing document entries
+
+      const documents = data.documents || [];
+
+      if (documents.length === 0) {
+        // No docs found: insert one blank entry
+        const entry = document.createElement('div');
+        entry.classList.add('document-entry');
+        entry.style = "display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 10px;";
+        entry.innerHTML = `
           <input type="text" name="doc_type" placeholder="Document Type (e.g. PAN, Aadhaar)" required style="width: 100%;" />
           <input type="text" name="file_path" placeholder="File Path or Upload Reference" required style="width: 100%;" />
-        </div>
-      `;
-      docContainer.insertAdjacentHTML("beforeend", docHtml);
+        `;
+        docContainer.appendChild(entry);
+      } else {
+        // Insert up to 3 document entries
+        documents.forEach(doc => {
+          const entry = document.createElement('div');
+          entry.classList.add('document-entry');
+          entry.style = "display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 10px;";
+          entry.innerHTML = `
+            <input type="text" name="doc_type" value="${doc.doc_type || ''}" placeholder="Document Type" required style="width: 100%;" />
+            <input type="text" name="file_path" value="${doc.file_path || ''}" placeholder="File Path" required style="width: 100%;" />
+          `;
+          docContainer.appendChild(entry);
+        });
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Error loading client info");
     });
+});
+
+
+  document.getElementById("workflow-select").addEventListener("change", function () {
+    const workflowId = this.value;
+    const productSelect = document.getElementById("product-select");
+
+    for (let i = 0; i < productSelect.options.length; i++) {
+      const option = productSelect.options[i];
+      if (option.dataset.workflow === workflowId) {
+        productSelect.value = option.value;
+        break;
+      }
+    }
   });
 </script>
+
 
 </body>
 </html>

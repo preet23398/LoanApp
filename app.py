@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_mysql_connector import MySQL
 from flask import make_response
 from datetime import datetime
+from flask import jsonify
+
 
 app = Flask(__name__)
 app.secret_key = 'your-very-secret-key-here'
@@ -380,7 +382,8 @@ def new_application():
             clients = cursor.fetchall()
             cursor.close()
             error = "All fields are required."
-            return render_template('new_application.html', clients=clients, error=error)
+            return render_template('new_application.html', clients=clients, error=error,
+                                   client_data={}, doc_type='', file_path='', application_id=None)
 
         try:
             client_id = int(client_id)
@@ -392,7 +395,8 @@ def new_application():
             clients = cursor.fetchall()
             cursor.close()
             error = "Invalid numeric values in form."
-            return render_template('new_application.html', clients=clients, error=error)
+            return render_template('new_application.html', clients=clients, error=error,
+                                   client_data={}, doc_type='', file_path='', application_id=None)
 
         try:
             sql = """
@@ -411,74 +415,147 @@ def new_application():
             clients = cursor.fetchall()
             cursor.close()
             error = f"Database error: {err}"
-            return render_template('new_application.html', clients=clients, error=error)
+            return render_template('new_application.html', clients=clients, error=error,
+                                   client_data={}, doc_type='', file_path='', application_id=None)
 
-    # GET request: fetch all client details (not just IDs)
+    # GET request: fetch all client details
     cursor.execute("SELECT * FROM client")
     clients = cursor.fetchall()
     cursor.close()
-    return render_template('new_application.html', clients=clients)
+    return render_template('new_application.html', clients=clients,
+                           client_data={}, doc_type='', file_path='', application_id=None)
 
-from datetime import datetime
+
 
 @app.route('/save_client_info', methods=['POST'])
 def save_client_info():
-    form = request.form
-    client_data = {
-        "first_name": form.get("first_name"),
-        "middle_name": form.get("middle_name"),
-        "last_name": form.get("last_name"),
-        "gender": form.get("gender"),
-        "dob": form.get("dob"),
-        "age": form.get("age"),
-        "marital_status": form.get("marital_status"),
-        "father_name": form.get("father_name"),
-        "mother_name": form.get("mother_name"),
-        "spouse_name": form.get("spouse_name"),
-        "education": form.get("education"),
-        "phone": form.get("phone"),
-        "email": form.get("email")
-    }
 
-    doc_type = form.get("doc_type")
-    file_path = form.get("file_path")
-    application_id = form.get("application_id") or None
-    client_id = form.get("client_id") or None
+    # Get basic client info
+    first_name = request.form.get('first_name')
+    middle_name = request.form.get('middle_name')
+    last_name = request.form.get('last_name')
+    gender = request.form.get('gender')
+    dob = request.form.get('dob')
+    age = request.form.get('age')
+    marital_status = request.form.get('marital_status')
+    father_name = request.form.get('father_name')
+    mother_name = request.form.get('mother_name')
+    spouse_name = request.form.get('spouse_name')
+    education = request.form.get('education')
+    phone = request.form.get('phone')
+    email = request.form.get('email')
 
-    cursor = mysql.connection.cursor(dictionary=True)
+    # Get documents
+    doc_types = request.form.getlist('doc_type[]')
+    file_paths = request.form.getlist('file_path[]')
 
-    # Check if document already exists (doc_type + file_path)
-    cursor.execute("""
-        SELECT * FROM application_documents
-        WHERE doc_type = %s AND file_path = %s
-    """, (doc_type, file_path))
-    existing_doc = cursor.fetchone()
+    cursor = mysql.connection.cursor()
 
-    if existing_doc:
-        flash("Warning: This document is already uploaded for another client/application.", "warning")
+    # Check for existing client by doc_type and file_path
+    for doc_type, file_path in zip(doc_types, file_paths):
+        query = """
+            SELECT client_id FROM application_documents 
+            WHERE doc_type = %s AND file_path = %s
+        """
+        cursor.execute(query, (doc_type, file_path))
+        result = cursor.fetchone()
+        
+        if result:
+            existing_client_id = result[0]
+        flash(f"Client with the same details exists: {existing_client_id}. Select their client ID from the existing clients dropdown below.", "error")
         cursor.close()
-        return redirect(url_for('homepage'))
 
-    # Insert into client table
-    cursor.execute("""
-        INSERT INTO client 
-        (first_name, middle_name, last_name, gender, dob, age, marital_status, father_name, mother_name, spouse_name, education, phone, email)
+    # Fetch client list again for the dropdown
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT client_id FROM client")
+        clients = cursor.fetchall()
+        cursor.close()
+
+    # Re-render the same form with the flash message and client list
+        return render_template(
+        'new_application.html',  # adjust this to your actual template name
+        clients=clients,
+        client_data={
+            'first_name': first_name,
+            'middle_name': middle_name,
+            'last_name': last_name,
+            'gender': gender,
+            'dob': dob,
+            'age': age,
+            'marital_status': marital_status,
+            'father_name': father_name,
+            'mother_name': mother_name,
+            'spouse_name': spouse_name,
+            'education': education,
+            'phone': phone,
+            'email': email
+        }
+    )
+
+    # No duplicates found: insert new client
+    client_insert_query = """
+        INSERT INTO client (
+            first_name, middle_name, last_name, gender, dob, age, 
+            marital_status, father_name, mother_name, spouse_name, 
+            education, phone, email
+        )
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, tuple(client_data.values()))
-    new_client_id = cursor.lastrowid
+    """
+    client_data = (
+        first_name, middle_name, last_name, gender, dob, age,
+        marital_status, father_name, mother_name, spouse_name,
+        education, phone, email
+    )
+    cursor.execute(client_insert_query, client_data)
+    mysql.connection.commit()
 
-    # Insert into application_documents table
-    cursor.execute("""
-        INSERT INTO application_documents 
-        (application_id, doc_type, file_path, client_id, uploaded_at)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (application_id, doc_type, file_path, new_client_id, datetime.now()))
+    client_id = cursor.lastrowid
+
+    # Insert application documents
+    for doc_type, file_path in zip(doc_types, file_paths):
+        doc_insert_query = """
+            INSERT INTO application_documents (client_id, doc_type, file_path)
+            VALUES (%s, %s, %s)
+        """
+        cursor.execute(doc_insert_query, (client_id, doc_type, file_path))
 
     mysql.connection.commit()
     cursor.close()
 
-    flash("Client info and document saved successfully.", "success")
+    # OPTIONAL: flash a success message (remove if you want no message at all)
+    # flash("Client and documents saved successfully.", "success")
     return redirect(url_for('homepage'))
+
+
+
+@app.route('/get_client_data/<int:client_id>')
+def get_client_data(client_id):
+    cursor = mysql.connection.cursor(dictionary=True)
+
+    # Get client info
+    cursor.execute("SELECT * FROM client WHERE client_id = %s", (client_id,))
+    client = cursor.fetchone()
+
+    # Get top 3 documents for client
+    cursor.execute("""
+        SELECT doc_type, file_path
+        FROM application_documents
+        WHERE client_id = %s
+        ORDER BY uploaded_at DESC
+        LIMIT 3
+    """, (client_id,))
+    documents = cursor.fetchall()
+
+    cursor.close()
+
+    if client:
+        return jsonify({
+            **client,
+            "documents": documents
+        })
+    else:
+        return jsonify({"error": "Client not found"}), 404
+
 
 
 if __name__ == '__main__':
