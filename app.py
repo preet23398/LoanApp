@@ -451,7 +451,7 @@ def save_client_info():
 
     cursor = mysql.connection.cursor()
 
-    # Check for existing client by doc_type and file_path
+     # Check for existing client by doc_type and file_path
     for doc_type, file_path in zip(doc_types, file_paths):
         query = """
             SELECT client_id FROM application_documents 
@@ -459,38 +459,34 @@ def save_client_info():
         """
         cursor.execute(query, (doc_type, file_path))
         result = cursor.fetchone()
-        
+
         if result:
             existing_client_id = result[0]
-        flash(f"Client with the same details exists: {existing_client_id}. Select their client ID from the existing clients dropdown below.", "error")
-        cursor.close()
-
-    # Fetch client list again for the dropdown
-        cursor = mysql.connection.cursor()
-        cursor.execute("SELECT client_id FROM client")
-        clients = cursor.fetchall()
-        cursor.close()
-
-    # Re-render the same form with the flash message and client list
-        return render_template(
-        'new_application.html',  # adjust this to your actual template name
-        clients=clients,
-        client_data={
-            'first_name': first_name,
-            'middle_name': middle_name,
-            'last_name': last_name,
-            'gender': gender,
-            'dob': dob,
-            'age': age,
-            'marital_status': marital_status,
-            'father_name': father_name,
-            'mother_name': mother_name,
-            'spouse_name': spouse_name,
-            'education': education,
-            'phone': phone,
-            'email': email
-        }
-    )
+            cursor.execute("SELECT client_id FROM client")
+            clients = cursor.fetchall()
+            cursor.close()
+            error_message = f"Client with the same documents exists. Select (Client ID: {existing_client_id}) in the existing clients dropdown"
+            return render_template(
+                'new_application.html',
+                clients=clients,
+                client_data={
+                    'first_name': first_name,
+                    'middle_name': middle_name,
+                    'last_name': last_name,
+                    'gender': gender,
+                    'dob': dob,
+                    'age': age,
+                    'marital_status': marital_status,
+                    'father_name': father_name,
+                    'mother_name': mother_name,
+                    'spouse_name': spouse_name,
+                    'education': education,
+                    'phone': phone,
+                    'email': email
+                },
+                document_data=list(zip(doc_types, file_paths)),
+                error=error_message
+            )
 
     # No duplicates found: insert new client
     client_insert_query = """
@@ -555,6 +551,56 @@ def get_client_data(client_id):
         })
     else:
         return jsonify({"error": "Client not found"}), 404
+
+@app.route('/new_loan_application', methods=['GET', 'POST'])
+def new_loan_application():
+    cursor = mysql.connection.cursor(dictionary=True)
+
+    if request.method == 'POST':
+        client_id = request.form.get('client_id')
+        workflow_id = request.form.get('workflow_id')
+        product_id = request.form.get('product_id')
+        loan_amount = request.form.get('loan_amount')
+
+        # Get the first stage ID for the workflow
+        cursor.execute("SELECT stage_id FROM workflow_stages WHERE workflow_id = %s ORDER BY stage_order ASC LIMIT 1", (workflow_id,))
+        stage = cursor.fetchone()
+        current_stage_id = stage['stage_id'] if stage else None
+
+        # Insert new loan application
+        cursor.execute("""
+            INSERT INTO loan_applications (user_id, client_id, workflow_id, product_id, current_stage_id, status, loan_amount)
+            VALUES (%s, %s, %s, %s, %s, 'pending', %s)
+        """, (session['user_id'], client_id, workflow_id, product_id, current_stage_id, loan_amount))
+        mysql.connection.commit()
+
+        cursor.close()
+
+        return redirect(url_for('new_loan_application', success=1))
+
+    # GET method
+    cursor.execute("SELECT client_id, first_name, last_name FROM client")
+    clients = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT w.workflow_id, w.name, p.product_id, p.max_amount
+        FROM workflows w
+        JOIN loan_products p ON w.workflow_id = p.workflow_id
+    """)
+    workflows = cursor.fetchall()
+
+    cursor.execute("SELECT product_id, name, workflow_id FROM loan_products")
+    products = cursor.fetchall()
+
+    cursor.close()
+
+    return render_template(
+        'new_loan_application.html',
+        clients=clients,
+        workflows=workflows,
+        products=products,
+        success=request.args.get('success')
+    )
 
 
 

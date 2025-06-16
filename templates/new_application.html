@@ -129,6 +129,13 @@
     button:hover {
       background-color: #0056b3;
     }
+
+    .button-wrapper {
+  position: absolute;
+  bottom: 20px;
+  right: 30px;
+}
+
   </style>
 </head>
 <body>
@@ -161,6 +168,12 @@
   <hr style="margin-top: 30px; margin-bottom: 30px;">
 
   <!-- Form Start -->
+   {% if error %}
+  <p id="error-msg" class="error-message" style="color: red; cursor: pointer; margin-bottom: 15px;">
+    {{ error }}
+  </p>
+{% endif %}
+
   <form method="POST" action="{{ url_for('save_client_info') }}">
     
   <!-- Client Details Section -->
@@ -234,9 +247,13 @@
 </div>
 </form>
 
+<div class="button-wrapper">
+    <a href="{{ url_for('new_loan_application') }}">
+      <button type="button">➕ Register a new loan application</button>
+    </a>
+  </div>
+
 </div>
-
-
   <script>
     document.getElementById('existing-client-checkbox').addEventListener('change', function () {
     const dropdown = document.getElementById('client-id-dropdown');
