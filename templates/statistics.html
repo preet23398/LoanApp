@@ -160,7 +160,57 @@
       </strong>
     </p>
 
-    <p>Applications Completed Workflow: {{ completed_count }}</p>
+  <p style="margin-top: 30px; font-weight: 500;">
+  {% if request.args.get('filter') == 'rejected_date' %}
+    Filtered Rejected Applications:
+  {% else %}
+    Rejected Applications:
+  {% endif %}
+</p>
+<ul style="padding-left: 20px;">
+  {% if rejected_applications %}
+    {% for app in rejected_applications %}
+      <li>
+        Application ID: {{ app.application_id }} |
+        Rejected At: {{ app.rejected_at.strftime('%Y-%m-%d %H:%M') }}
+      </li>
+    {% endfor %}
+  {% else %}
+    <li>No rejected applications found in this range.</li>
+  {% endif %}
+</ul>
+
+
+
+<!-- More Statistics Button -->
+<button id="moreStatsBtn" style="margin-top: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">More Statistics</button>
+
+<!-- Hidden Filter Section -->
+<div id="moreStatsSection" style="margin-top: 20px; display: none;">
+  <label for="rejectedFilter">Filter Rejected Applications:</label>
+  <select id="rejectedFilter">
+    <option value="">-- Select Filter --</option>
+    <option value="date">By Date</option>
+  </select>
+
+  <div id="dateFilterInputs" style="margin-top: 10px; display: none;">
+    <label for="startDate">Start Date:</label>
+    <input type="date" id="startDate" name="start_date">
+
+    <label for="endDate" style="margin-left: 10px;">End Date:</label>
+    <input type="date" id="endDate" name="end_date">
+
+    <button id="applyDateFilterBtn" type="button" style="margin-left: 10px;">Apply</button>
+  </div>
+</div>
+
+<p style="margin-top: 30px; font-weight: 500;">
+  Applications Completed Workflow: 
+  <strong>{{ completed_count }}</strong>
+</p>
+
+
+
   </div>
 
   <!-- Right side: Pie charts -->
@@ -226,6 +276,41 @@
       }
     }
   });
+
+  document.getElementById('moreStatsBtn').addEventListener('click', function () {
+    const section = document.getElementById('moreStatsSection');
+    section.style.display = section.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.getElementById('rejectedFilter').addEventListener('change', function () {
+    const value = this.value;
+    const dateInputs = document.getElementById('dateFilterInputs');
+    dateInputs.style.display = value === 'date' ? 'block' : 'none';
+  });
+
+  document.getElementById('applyDateFilterBtn').addEventListener('click', function () {
+    const start = document.getElementById('startDate').value;
+    const end = document.getElementById('endDate').value;
+    if (!start || !end) {
+      alert("Please select both start and end dates.");
+      return;
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set("filter", "rejected_date");
+    url.searchParams.set("start_date", start);
+    url.searchParams.set("end_date", end);
+    window.location.href = url.toString();
+  });
+
+  // Auto-expand filter section if filter is active (e.g., after applying date filter)
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const isDateFilter = urlParams.get("filter") === "rejected_date";
+  if (isDateFilter) {
+    document.getElementById('moreStatsSection').style.display = 'block';
+  }
+});
+
 </script>
 
 

@@ -140,6 +140,8 @@
         <option value="workflow">By type of Workflow</option>
         <option value="loan_product">By Loan Product</option>
         <option value="status">By Status</option>
+        <option value="amount">By Loan Amount</option>
+
       </select>
 
       <!-- Workflow Filter -->
@@ -182,35 +184,62 @@
           <option value="Approved">Approved</option>
         </select>
       </div>
+
+      <!-- Loan Amount Filter -->
+<div id="amountFilterContainer" style="margin-top: 10px; display: none;">
+  <label for="minAmount">Min Amount:</label>
+  <input type="number" id="minAmount" name="min_amount" />
+  <label for="maxAmount" style="margin-left: 10px;">Max Amount:</label>
+  <input type="number" id="maxAmount" name="max_amount" />
+  <button onclick="filterByAmount()" style="margin-left: 10px;">Apply</button>
+</div>
+
     </div>
 
     {% if applications %}
     <table id="loanTable">
-      <thead>
+    <thead>
   <tr>
-    {% for key in applications[0].keys() %}
-    <th>{{ key | capitalize }}</th>
-    {% endfor %}
-    <th>Details</th>  <!-- Add this -->
+    <th>#</th>
+    <th>Client Name</th>
+    <th>Phone</th>
+    <th>Email</th>
+    <th>DOB</th>
+    <th>Gender</th>
+    <th>Age</th>
+    <th>Status</th>
+    <th>Loan Amount</th>
+    <th>Workflow</th>
+    <th>Product</th>
+    <th>Stage</th>
+    <th>Details</th>
   </tr>
 </thead>
-
-      <tbody>
-        {% for app in applications %}
-<tr>
-  {% for value in app.values() %}
-  <td>{{ value }}</td>
+<tbody>
+  {% for app in applications %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td>{{ app.full_name }}</td>
+    <td>{{ app.phone }}</td>
+    <td>{{ app.email }}</td>
+    <td>{{ app.dob }}</td>
+    <td>{{ app.gender }}</td>
+    <td>{{ app.age }}</td>
+    <td>{{ app.status }}</td>
+    <td>{{ app.loan_amount }}</td>
+    <td>{{ app.workflow_name }}</td>
+    <td>{{ app.product_name }}</td>
+    <td>{{ app.current_stage or 'N/A' }}</td>
+    <td>
+      <form action="{{ url_for('application_detail', application_id=app.application_id) }}">
+        <button type="submit" style="width: 30px; height: 30px; background-color: #3498db; border: none; color: white; border-radius: 4px; cursor: pointer;">&#9654;</button>
+      </form>
+    </td>
+  </tr>
   {% endfor %}
-  <td>
-    <form action="{{ url_for('application_detail', application_id=app['application_id']) }}">
-      <button type="submit" style="width: 30px; height: 30px; background-color: #3498db; border: none; color: white; border-radius: 4px; cursor: pointer;">&#9654;</button>
-    </form>
-  </td>
-</tr>
-{% endfor %}
+</tbody>
 
 
-      </tbody>
     </table>
     {% else %}
       <p>No loan applications found.</p>
@@ -225,6 +254,8 @@
       const workflowContainer = document.getElementById("subFilterContainer");
       const productContainer = document.getElementById("productFilterContainer");
       const statusContainer = document.getElementById("statusFilterContainer");
+      const amountContainer = document.getElementById("amountFilterContainer");
+
 
       workflowContainer.style.display = selected === "workflow" ? "block" : "none";
       productContainer.style.display = selected === "loan_product" ? "block" : "none";
@@ -232,7 +263,12 @@
 
       if (selected !== "workflow") document.getElementById("workflowId").value = "";
       if (selected !== "loan_product") document.getElementById("productId").value = "";
-      if (selected !== "status") document.getElementById("statusId").value = "";
+      if (selected !== "status") document.getElementById("statusId").value = "";amountContainer.style.display = selected === "amount" ? "block" : "none";
+if (selected !== "amount") {
+  document.getElementById("minAmount").value = "";
+  document.getElementById("maxAmount").value = "";
+}
+
 
       filterTable();
     }
@@ -281,6 +317,17 @@
         row.style.display = showRow ? "" : "none";
       }
     }
+
+    function filterByAmount() {
+  const min = document.getElementById("minAmount").value;
+  const max = document.getElementById("maxAmount").value;
+  const url = new URL(window.location.href);
+  url.searchParams.set("filter", "amount");
+  url.searchParams.set("min_amount", min);
+  url.searchParams.set("max_amount", max);
+  window.location.href = url.toString();
+}
+
 
     document.addEventListener("DOMContentLoaded", function () {
   toggleSubDropdown();

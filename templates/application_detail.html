@@ -273,6 +273,13 @@
           </tr>
         {% endfor %}
       </table>
+
+      <form action="{{ url_for('edit_application', application_id=application.application_id) }}" method="GET" style="margin-top: 20px;">
+  <button type="submit" style="padding: 10px 15px; font-size: 1rem; border-radius: 5px; background-color: #007bff; color: white; border: none; cursor: pointer;">
+    Edit Application
+  </button>
+</form>
+
     </div>
 
     <!-- Workflow Stages List -->

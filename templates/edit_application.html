@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Application</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: url("/static/images/jeffrey-blum-7-gaPkhIgqs-unsplash.jpg") no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Segoe UI', sans-serif;
+      color: #333;
+    }
+
+    .dashboard {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 350px;
+      background-color: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+      padding: 30px 20px;
+      color: black;
+      z-index: 2;
+    }
+
+    .dashboard h2 {
+      margin-bottom: 30px;
+      font-size: 1.5rem;
+      text-align: center;
+      color: white;
+    }
+
+    .dashboard a {
+      display: block;
+      color: black;
+      text-decoration: none;
+      margin: 15px 0;
+      padding: 25px 15px;
+      border-radius: 5px;
+      border: 1px solid black;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .dashboard a:hover {
+      background: #f0f0f0;
+      color: black;
+    }
+
+    .top-text {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 20px 25px;
+      border-radius: 8px;
+      font-size: 2rem;
+      z-index: 3;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .main-content {
+      margin-left: 450px;
+      margin-top: 150px;
+      padding: 40px;
+      background: white;
+      border-radius: 15px;
+      max-width: 700px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .main-content h2 {
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+      color: #222;
+    }
+
+    .form-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .form-table td {
+      padding: 10px;
+      vertical-align: top;
+    }
+
+    .label {
+      font-weight: bold;
+      width: 40%;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .save-button {
+      margin-top: 30px;
+      padding: 10px 15px;
+      font-size: 1rem;
+      border-radius: 5px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard">
+    <h2>Dashboard</h2>
+    <a href="{{ url_for('homepage') }}">Homepage</a>
+    <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
+    <a href="{{ url_for('statistics') }}">Statistics</a>
+    <a href="#">Alerts</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </div>
+
+  <div class="top-text">Edit Application</div>
+
+  <div class="main-content">
+    <h2>Edit Application #{{ application.application_id }}</h2>
+    <form method="POST" action="{{ url_for('save_application_changes', application_id=application.application_id) }}">
+      <table class="form-table">
+        {% for key, value in application.items() %}
+          <tr>
+            <td class="label">{{ key.replace('_', ' ').capitalize() }}</td>
+            <td><input type="text" name="{{ key }}" value="{{ value }}" class="form-input" /></td>
+          </tr>
+        {% endfor %}
+      </table>
+      <button type="submit" class="save-button">Save Changes</button>
+    </form>
+  </div>
+
+</body>
+</html>

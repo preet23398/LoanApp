@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <style>
+  input.uppercase {
+    text-transform: uppercase;
+  }
+</style>
+
   <meta charset="UTF-8" />
   <title>New Loan Application</title>
   <style>
@@ -168,6 +174,12 @@
   <hr style="margin-top: 30px; margin-bottom: 30px;">
 
   <!-- Form Start -->
+   {% if success_message %}
+  <div style="color: green; font-weight: bold; margin-bottom: 15px;">
+    {{ success_message }}
+  </div>
+{% endif %}
+
    {% if error %}
   <p id="error-msg" class="error-message" style="color: red; cursor: pointer; margin-bottom: 15px;">
     {{ error }}
@@ -180,18 +192,31 @@
 
   <h2 style="font-size: 1.3rem; font-weight: bold; margin-bottom: 15px;">Client Details</h2>
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 40px;">
-    <input type="text" name="first_name" value="{{ client_data.first_name or '' }}" placeholder="First Name" required>
-    <input type="text" name="middle_name" value="{{ client_data.middle_name or '' }}" placeholder="Middle Name">
-    <input type="text" name="last_name" value="{{ client_data.last_name or '' }}" placeholder="Last Name" required>
-    <input type="text" name="gender" value="{{ client_data.gender or '' }}" placeholder="Gender" required>
+    <input type="text" class="uppercase" name="first_name" value="{{ client_data.first_name or '' }}" placeholder="First Name" required>
+    <input type="text" class="uppercase" name="middle_name" value="{{ client_data.middle_name or '' }}" placeholder="Middle Name">
+    <input type="text" class="uppercase" name="last_name" value="{{ client_data.last_name or '' }}" placeholder="Last Name" required>
+    <select name="gender" required>
+  <option value="" disabled selected>Select Gender</option>
+  <option value="MALE">Male</option>
+  <option value="FEMALE">Female</option>
+  <option value="OTHER">Other</option>
+  <option value="PREFER NOT TO SAY">Prefer not to say</option>
+</select>
+
     <input type="date" name="dob" value="{{ client_data.dob or '' }}" placeholder="Date of Birth" required>
-    <input type="number" name="age" value="{{ client_data.age or '' }}" placeholder="Age" min="0" required>
-    <input type="text" name="marital_status" value="{{ client_data.marital_status or '' }}" placeholder="Marital Status">
-    <input type="text" name="father_name" value="{{ client_data.father_name or '' }}" placeholder="Father's Name">
-    <input type="text" name="mother_name" value="{{ client_data.mother_name or '' }}" placeholder="Mother's Name">
-    <input type="text" name="spouse_name" value="{{ client_data.spouse_name or '' }}" placeholder="Spouse Name">
-    <input type="text" name="education" value="{{ client_data.education or '' }}" placeholder="Education">
-    <input type="tel" name="phone" value="{{ client_data.phone or '' }}" placeholder="Phone Number">
+    <select name="marital_status" required>
+  <option value="" disabled selected>Select Marital Status</option>
+  <option value="MARRIED">Married</option>
+  <option value="NA">Not Applicable</option>
+</select>
+
+    <input type="text" class="uppercase" name="father_name" value="{{ client_data.father_name or '' }}" placeholder="Father's Name">
+    <input type="text" class="uppercase" name="mother_name" value="{{ client_data.mother_name or '' }}" placeholder="Mother's Name">
+    <input type="text" class="uppercase" name="spouse_name" value="{{ client_data.spouse_name or '' }}" placeholder="Spouse Name">
+    <input type="text" class="uppercase" name="education" value="{{ client_data.education or '' }}" placeholder="Education">
+
+    <input type="tel" name="phone" pattern="\d{10}" title="Enter exactly 10 digits" placeholder="PHONE NUMBER" required />
+
     <input type="email" name="email" value="{{ client_data.email or '' }}" placeholder="Email">
   </div>
 
@@ -217,7 +242,12 @@
     {% endfor %}
   {% else %}
     <div class="document-entry" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 10px;">
-      <input type="text" name="doc_type[]" placeholder="Document Type (e.g. PAN, Aadhaar)" required style="width: 100%;" />
+      <select name="doc_type[]" required style="width: 100%;">
+  <option value="" disabled selected>Select Document Type</option>
+  <option value="AADHAAR CARD">Aadhaar Card</option>
+  <option value="PAN CARD">Pan Card</option>
+</select>
+
       <input type="text" name="file_path[]" placeholder="File Path or Upload Reference" required style="width: 100%;" />
     </div>
   {% endif %}
@@ -255,95 +285,88 @@
 
 </div>
   <script>
-    document.getElementById('existing-client-checkbox').addEventListener('change', function () {
+  document.getElementById('existing-client-checkbox').addEventListener('change', function () {
     const dropdown = document.getElementById('client-id-dropdown');
     dropdown.disabled = !this.checked;
 
-    // Optionally clear client data if unchecked
     if (!this.checked) {
       dropdown.value = "";
-      const inputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="tel"], input[type="email"], input[type="date"]');
+      const inputs = document.querySelectorAll('input[type="text"], input[type="tel"], input[type="email"], input[type="date"]');
       inputs.forEach(input => input.value = '');
     }
   });
+
   document.getElementById('client-id-dropdown').addEventListener('change', function () {
-  const clientId = this.value;
+    const clientId = this.value;
 
-  fetch(`/get_client_data/${clientId}`)
-    .then(res => {
-      if (!res.ok) throw new Error("Failed to fetch client data");
-      return res.json();
-    })
-    .then(data => {
-      if (data.error) {
-        alert(data.error);
-        return;
-      }
+    fetch(`/get_client_data/${clientId}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch client data");
+        return res.json();
+      })
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
 
-      // Directly use top-level fields from data (no `data.client`)
-      document.querySelector('input[name="first_name"]').value = data.first_name || '';
-      document.querySelector('input[name="middle_name"]').value = data.middle_name || '';
-      document.querySelector('input[name="last_name"]').value = data.last_name || '';
-      document.querySelector('input[name="gender"]').value = data.gender || '';
-      
-      const dobInput = document.querySelector('input[name="dob"]');
-      if (data.dob) {
-        const parsedDate = new Date(data.dob);
-        const yyyy = parsedDate.getFullYear();
-        const mm = String(parsedDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(parsedDate.getDate()).padStart(2, '0');
-        dobInput.value = `${yyyy}-${mm}-${dd}`;
-      } else {
-        dobInput.value = '';
-      }
+        document.querySelector('input[name="first_name"]').value = data.first_name || '';
+        document.querySelector('input[name="middle_name"]').value = data.middle_name || '';
+        document.querySelector('input[name="last_name"]').value = data.last_name || '';
+        document.querySelector('select[name="gender"]').value = data.gender || '';
 
-      document.querySelector('input[name="age"]').value = data.age || '';
-      document.querySelector('input[name="marital_status"]').value = data.marital_status || '';
-      document.querySelector('input[name="father_name"]').value = data.father_name || '';
-      document.querySelector('input[name="mother_name"]').value = data.mother_name || '';
-      document.querySelector('input[name="spouse_name"]').value = data.spouse_name || '';
-      document.querySelector('input[name="education"]').value = data.education || '';
-      document.querySelector('input[name="phone"]').value = data.phone || '';
-      document.querySelector('input[name="email"]').value = data.email || '';
+        const dobInput = document.querySelector('input[name="dob"]');
+        if (data.dob) {
+          const parsedDate = new Date(data.dob);
+          const yyyy = parsedDate.getFullYear();
+          const mm = String(parsedDate.getMonth() + 1).padStart(2, '0');
+          const dd = String(parsedDate.getDate()).padStart(2, '0');
+          dobInput.value = `${yyyy}-${mm}-${dd}`;
+        } else {
+          dobInput.value = '';
+        }
 
-      // Document Autofill Section
-      const docContainer = document.getElementById('document-fields-container');
-      docContainer.innerHTML = ''; // Clear existing document entries
+        document.querySelector('select[name="marital_status"]').value = data.marital_status || '';
+        document.querySelector('input[name="father_name"]').value = data.father_name || '';
+        document.querySelector('input[name="mother_name"]').value = data.mother_name || '';
+        document.querySelector('input[name="spouse_name"]').value = data.spouse_name || '';
+        document.querySelector('input[name="education"]').value = data.education || '';
+        document.querySelector('input[name="phone"]').value = data.phone || '';
+        document.querySelector('input[name="email"]').value = data.email || '';
 
-      const documents = data.documents || [];
+        const docContainer = document.getElementById('document-fields-container');
+        docContainer.innerHTML = '';
 
-      if (documents.length === 0) {
-        // No docs found: insert one blank entry
-        const entry = document.createElement('div');
-        entry.classList.add('document-entry');
-        entry.style = "display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 10px;";
-        entry.innerHTML = `
-          <input type="text" name="doc_type" placeholder="Document Type (e.g. PAN, Aadhaar)" required style="width: 100%;" />
-          <input type="text" name="file_path" placeholder="File Path or Upload Reference" required style="width: 100%;" />
-        `;
-        docContainer.appendChild(entry);
-      } else {
-        // Insert up to 3 document entries
-        documents.forEach(doc => {
+        const documents = data.documents || [];
+        if (documents.length === 0) {
           const entry = document.createElement('div');
           entry.classList.add('document-entry');
           entry.style = "display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 10px;";
           entry.innerHTML = `
-            <input type="text" name="doc_type" value="${doc.doc_type || ''}" placeholder="Document Type" required style="width: 100%;" />
-            <input type="text" name="file_path" value="${doc.file_path || ''}" placeholder="File Path" required style="width: 100%;" />
+            <input type="text" name="doc_type" placeholder="Document Type (e.g. PAN, Aadhaar)" required style="width: 100%;" />
+            <input type="text" name="file_path" placeholder="File Path or Upload Reference" required style="width: 100%;" />
           `;
           docContainer.appendChild(entry);
-        });
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Error loading client info");
-    });
-});
+        } else {
+          documents.forEach(doc => {
+            const entry = document.createElement('div');
+            entry.classList.add('document-entry');
+            entry.style = "display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 10px;";
+            entry.innerHTML = `
+              <input type="text" name="doc_type" value="${doc.doc_type || ''}" placeholder="Document Type" required style="width: 100%;" />
+              <input type="text" name="file_path" value="${doc.file_path || ''}" placeholder="File Path" required style="width: 100%;" />
+            `;
+            docContainer.appendChild(entry);
+          });
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error loading client info");
+      });
+  });
 
-
-  document.getElementById("workflow-select").addEventListener("change", function () {
+  document.getElementById("workflow-select")?.addEventListener("change", function () {
     const workflowId = this.value;
     const productSelect = document.getElementById("product-select");
 
@@ -355,7 +378,44 @@
       }
     }
   });
+
+  // Final form submit logic with age calculation
+  document.querySelector('form').addEventListener('submit', function () {
+    // Convert text input to uppercase
+    this.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input.uppercase').forEach(input => {
+      input.value = input.value.toUpperCase();
+    });
+
+    this.querySelectorAll('select').forEach(select => {
+      if (select.value) {
+        select.value = select.value.toUpperCase();
+      }
+    });
+
+    // Inject age as hidden field (calculated from dob)
+    const dobInput = this.querySelector('input[name="dob"]');
+    if (dobInput && dobInput.value) {
+      const dob = new Date(dobInput.value);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+
+      // Remove old hidden field if exists
+      const existingHidden = this.querySelector('input[name="age"]');
+      if (existingHidden) existingHidden.remove();
+
+      const ageField = document.createElement('input');
+      ageField.type = 'hidden';
+      ageField.name = 'age';
+      ageField.value = age;
+      this.appendChild(ageField);
+    }
+  });
 </script>
+
 
 
 </body>
