@@ -108,10 +108,8 @@
 
   <div class="dashboard">
     <h2>Dashboard</h2>
-    <a href="{{ url_for('homepage') }}">Homepage</a>
     <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
     <a href="{{ url_for('statistics') }}">Statistics</a>
-    <a href="{{ url_for('alerts') }}">Alerts</a>
     <a href="{{ url_for('logout') }}">Logout</a>
   </div>
 
@@ -132,7 +130,6 @@
   New Client AND/OR New Loan Application
 </button>
 
-    <!-- Filter Dropdown -->
     <div style="margin-bottom: 20px; text-align: left;">
       <label for="loanFilter">Filter Loans:</label>
       <select id="loanFilter" name="loanFilter">
@@ -144,7 +141,6 @@
 
       </select>
 
-      <!-- Workflow Filter -->
       <div id="subFilterContainer" style="margin-top: 10px; display: none;">
         <label for="workflowId">Select Workflow:</label>
         <select id="workflowId" name="workflowId">
@@ -158,7 +154,6 @@
         </select>
       </div>
 
-      <!-- Product Filter -->
       <div id="productFilterContainer" style="margin-top: 10px; display: none;">
         <label for="productId">Select Loan Product:</label>
         <select id="productId" name="productId">
@@ -172,7 +167,6 @@
         </select>
       </div>
 
-      <!-- Status Filter -->
       <div id="statusFilterContainer" style="margin-top: 10px; display: none;">
         <label for="statusId">Select Status:</label>
         <select id="statusId" name="statusId">
@@ -185,7 +179,6 @@
         </select>
       </div>
 
-      <!-- Loan Amount Filter -->
 <div id="amountFilterContainer" style="margin-top: 10px; display: none;">
   <label for="minAmount">Min Amount:</label>
   <input type="number" id="minAmount" name="min_amount" />
@@ -336,7 +329,6 @@ if (selected !== "amount") {
   document.getElementById("productId").addEventListener("change", filterTable);
   document.getElementById("statusId").addEventListener("change", filterTable);
 
-  // ✅ Moved inside DOMContentLoaded
   document.querySelectorAll(".loan-row").forEach(row => {
     row.addEventListener("click", () => {
       const id = row.getAttribute("data-id");

@@ -32,8 +32,7 @@
   const errorMsg = document.getElementById('error-msg');
   if (errorMsg) {
     errorMsg.addEventListener('click', function(event) {
-      event.preventDefault(); // prevent any default action
-      // Redirect to forgot_password page
+      event.preventDefault(); 
       window.location.href = "{{ url_for('forgot_password') }}";
     });
   }

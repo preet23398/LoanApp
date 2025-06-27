@@ -65,11 +65,10 @@
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
     }
 
-    /* New flex container for side-by-side content */
     .main-content {
       display: flex;
-      gap: 40px; /* space between application and workflow */
-      margin-left: 450px; /* same left margin as before */
+      gap: 40px; 
+      margin-left: 450px; 
       margin-top: 150px;
     }
 
@@ -155,7 +154,6 @@
       flex: 1;
     }
 
-    /* Status section styles */
     .status-box {
       margin-left: 450px;
       margin-top: 40px;
@@ -201,7 +199,6 @@
       color: #155724;
     }
 
-    /* Buttons and select */
     #status-select {
       padding: 8px;
       border-radius: 5px;
@@ -244,25 +241,19 @@
 <body>
     
 
-  <!-- Left Dashboard -->
   <div class="dashboard">
     <h2>Dashboard</h2>
-    <a href="{{ url_for('homepage') }}">Homepage</a>
     <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
     <a href="{{ url_for('statistics') }}">Statistics</a>
-    <a href="#">Alerts</a>
     <a href="{{ url_for('logout') }}">Logout</a>
   </div>
 
-  <!-- Page Title -->
   <div class="top-text">
     Application Details
   </div>
 
-  <!-- Side by side container -->
   <div class="main-content">
 
-    <!-- Application Data -->
     <div class="content-box">
       <h2>Application #{{ application.application_id }}</h2>
       <table>
@@ -282,7 +273,6 @@
 
     </div>
 
-    <!-- Workflow Stages List -->
     <div class="workflow-box">
       <h2>Workflow Stages</h2>
       <ul>
@@ -311,7 +301,6 @@
 
   </div>
 
-  <!-- Status section below -->
   <div class="status-box">
     <div class="status-content">
       <h2>Status for Current Workflow Stage: "{{ current_status.capitalize() if current_status else 'N/A' }}"</h2>
@@ -334,13 +323,11 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // STATUS UPDATE TOGGLING
       const updateStatusBtn = document.getElementById('update-status-btn');
       const statusSelect = document.getElementById('status-select');
       const submitStatusBtn = document.getElementById('submit-status-btn');
       const cancelStatusBtn = document.getElementById('cancel-status-btn');
 
-      // Initially hide select and buttons
       statusSelect.style.display = 'none';
       submitStatusBtn.style.display = 'none';
       cancelStatusBtn.style.display = 'none';
@@ -357,7 +344,6 @@
         statusSelect.style.display = 'none';
         submitStatusBtn.style.display = 'none';
         cancelStatusBtn.style.display = 'none';
-        // Reset dropdown to current_status
         statusSelect.value = "{{ current_status }}";
       });
     });

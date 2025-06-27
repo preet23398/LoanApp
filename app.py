@@ -43,7 +43,6 @@ def homepage():
     response.headers['Expires'] = '-1'
     return response
 
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -65,14 +64,13 @@ def login():
             if stored_password == password:
                 session['user_id'] = user_id_db
                 session['username'] = username
-                return redirect(url_for('homepage'))
+                return redirect(url_for('loan_requests'))
             else:
                 error= "Wrong Password."
         else:
             error = "Username not found."
 
     return render_template('login.html', error=error)
-
 
 @app.route('/workflows')
 def get_workflows():
@@ -137,25 +135,18 @@ def loan_requests():
 
     return render_template('loan-requests.html', applications=applications)
 
-
-
-from flask import request  # Ensure this is imported at the top
-
 @app.route('/statistics')
 def statistics():
     user_idd = session.get('user_id')
     cursor = mysql.connection.cursor(dictionary=True)
 
-    # Get filter parameters from query string
     filter_type = request.args.get('filter')
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
-    # Total applications
     cursor.execute("SELECT COUNT(*) AS count FROM loan_applications WHERE user_id = %s", (user_idd,))
     total_applications = cursor.fetchone()['count']
 
-    # Workflow counts
     cursor.execute("""
         SELECT w.workflow_id, w.name AS workflow_name, COUNT(la.application_id) AS count
         FROM workflows w
@@ -165,7 +156,6 @@ def statistics():
     """, (user_idd,))
     workflow_counts = cursor.fetchall()
 
-    # Status counts (excluding rejected)
     all_statuses = ['pending', 'in progress', 'credit check', 'under review', 'approved']
     placeholders = ','.join(['%s'] * len(all_statuses))
     query = f"""
@@ -179,7 +169,6 @@ def statistics():
     status_dict = {row['status']: row['count'] for row in raw_status_counts}
     status_counts = [{'status': s, 'count': status_dict.get(s, 0)} for s in all_statuses]
 
-    # Rejected applications (optionally filtered by date)
     if filter_type == "rejected_date" and start_date and end_date:
         cursor.execute("""
             SELECT application_id, rejected_at 
@@ -196,7 +185,6 @@ def statistics():
     print("Filtered Rejected Applications:", rejected_applications)
 
 
-    # Rejected count (always total)
     cursor.execute("""
         SELECT COUNT(*) AS count 
         FROM rejected_applications
@@ -204,7 +192,6 @@ def statistics():
     """, (user_idd,))
     rejected_count = cursor.fetchone()['count'] or 0
 
-    # Stuck stage (longest average time)
     cursor.execute("""
         SELECT 
             ws.stage_name,
@@ -232,7 +219,6 @@ def statistics():
     """, (user_idd,))
     stuck_stage = cursor.fetchone()
 
-    # Completed applications
     cursor.execute("""
         SELECT COUNT(DISTINCT ash.application_id) AS completed_applications
         FROM application_stage_history ash
@@ -268,7 +254,6 @@ def statistics():
         completed_count=completed_count
     )
 
-
 @app.route('/alerts')
 def alerts():
     return render_template('alerts.html')
@@ -277,7 +262,6 @@ def alerts():
 def logout():
     session.clear()
     return redirect(url_for('login'))
-
 
 @app.route("/application/<int:application_id>")
 def application_detail(application_id):
@@ -374,7 +358,6 @@ def update_status(application_id):
 
     cursor = mysql.connection.cursor()
 
-    # Fetch application and user_id
     cursor.execute("SELECT user_id FROM loan_applications WHERE application_id = %s", (application_id,))
     result = cursor.fetchone()
 
@@ -386,13 +369,11 @@ def update_status(application_id):
     user_id = result[0]
 
     if new_status == 'rejected':
-        # Insert into rejected_applications
         cursor.execute("""
             INSERT INTO rejected_applications (user_id, application_id)
             VALUES (%s, %s)
         """, (user_id, application_id))
 
-        # Delete from loan_applications
         cursor.execute("DELETE FROM loan_applications WHERE application_id = %s", (application_id,))
         
         mysql.connection.commit()
@@ -402,7 +383,6 @@ def update_status(application_id):
         return redirect(url_for('loan_requests'))
 
     else:
-        # Just update status for other statuses
         cursor.execute("""
             UPDATE loan_applications SET status = %s WHERE application_id = %s
         """, (new_status, application_id))
@@ -413,13 +393,9 @@ def update_status(application_id):
         flash(f'Status updated to "{new_status}" successfully.', 'success')
         return redirect(url_for('application_detail', application_id=application_id))
 
-
-
-
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     return render_template('forgot_password.html')
-
 
 @app.route('/new_application', methods=['GET', 'POST'])
 def new_application():
@@ -461,7 +437,6 @@ def new_application():
                                    client_data={}, doc_type='', file_path='', application_id=None)
 
         try:
-            # Insert into loan_applications
             sql = """
                 INSERT INTO loan_applications 
                 (user_id, client_id, workflow_id, product_id, current_stage_id, status) 
@@ -469,9 +444,8 @@ def new_application():
             """
             cursor.execute(sql, (user_id, client_id, workflow_id, product_id, current_stage_id, status))
             mysql.connection.commit()
-            application_id = cursor.lastrowid  # get the inserted application_id
+            application_id = cursor.lastrowid  
 
-            # Update application_documents to include application_id
             doc_types = request.form.getlist('doc_type[]')
             file_paths = request.form.getlist('file_path[]')
 
@@ -497,19 +471,14 @@ def new_application():
             return render_template('new_application.html', clients=clients, error=error,
                                    client_data={}, doc_type='', file_path='', application_id=None)
 
-    # GET request: fetch all client details
     cursor.execute("SELECT * FROM client")
     clients = cursor.fetchall()
     cursor.close()
     return render_template('new_application.html', clients=clients,
                            client_data={}, doc_type='', file_path='', application_id=None)
 
-
-
-
 @app.route('/save_client_info', methods=['POST'])
 def save_client_info():
-    # Get basic client info
     first_name = request.form.get('first_name')
     middle_name = request.form.get('middle_name')
     last_name = request.form.get('last_name')
@@ -524,13 +493,11 @@ def save_client_info():
     phone = request.form.get('phone')
     email = request.form.get('email')
 
-    # Get document info
     doc_types = request.form.getlist('doc_type[]')
     file_paths = request.form.getlist('file_path[]')
 
     cursor = mysql.connection.cursor()
 
-    # Duplicate check
     for doc_type, file_path in zip(doc_types, file_paths):
         query = """
             SELECT client_id FROM application_documents 
@@ -569,7 +536,6 @@ def save_client_info():
                 error=error_message
             )
 
-    # Insert new client
     client_insert_query = """
         INSERT INTO client (
             first_name, middle_name, last_name, gender, dob, age, 
@@ -588,7 +554,6 @@ def save_client_info():
 
     client_id = cursor.lastrowid
 
-    # Insert application documents
     for doc_type, file_path in zip(doc_types, file_paths):
         doc_insert_query = """
             INSERT INTO application_documents (client_id, doc_type, file_path)
@@ -599,7 +564,6 @@ def save_client_info():
     mysql.connection.commit()
     cursor.close()
 
-    # Fetch updated client list
     cursor = mysql.connection.cursor()
     cursor.execute("SELECT client_id FROM client")
     clients = cursor.fetchall()
@@ -608,21 +572,18 @@ def save_client_info():
     return render_template(
         'new_application.html',
         clients=clients,
-        client_data={},           # Clear fields
-        document_data=[],         # Clear documents
+        client_data={},           
+        document_data=[],         
         success_message="Client saved successfully!"
     )
-
 
 @app.route('/get_client_data/<int:client_id>')
 def get_client_data(client_id):
     cursor = mysql.connection.cursor(dictionary=True)
 
-    # Get client info
     cursor.execute("SELECT * FROM client WHERE client_id = %s", (client_id,))
     client = cursor.fetchone()
 
-    # Get top 3 documents for client
     cursor.execute("""
         SELECT doc_type, file_path
         FROM application_documents
@@ -652,7 +613,6 @@ def new_loan_application():
         product_id = request.form.get('product_id')
         loan_amount = request.form.get('loan_amount')
 
-        # Check age of client
         cursor.execute("SELECT age FROM client WHERE client_id = %s", (client_id,))
         client = cursor.fetchone()
 
@@ -660,12 +620,10 @@ def new_loan_application():
             cursor.close()
             return redirect(url_for('new_loan_application', error='1'))
 
-        # Get the first stage ID for the workflow
         cursor.execute("SELECT stage_id FROM workflow_stages WHERE workflow_id = %s ORDER BY stage_order ASC LIMIT 1", (workflow_id,))
         stage = cursor.fetchone()
         current_stage_id = stage['stage_id'] if stage else None
 
-        # Insert new loan application
         cursor.execute("""
             INSERT INTO loan_applications (user_id, client_id, workflow_id, product_id, current_stage_id, status, loan_amount)
             VALUES (%s, %s, %s, %s, %s, 'pending', %s)
@@ -676,7 +634,6 @@ def new_loan_application():
 
         return redirect(url_for('new_loan_application', success=1))
 
-    # GET method
     cursor.execute("SELECT client_id, first_name, last_name FROM client")
     clients = cursor.fetchall()
 
@@ -703,7 +660,6 @@ def new_loan_application():
 
 @app.route('/edit_application/<int:application_id>', methods=['GET'])
 def edit_application(application_id):
-    # Fetch the application by ID from the database
     cursor = mysql.connection.cursor(dictionary=True)
     cursor.execute("SELECT * FROM loan_applications WHERE application_id = %s", (application_id,))
     application = cursor.fetchone()
@@ -716,12 +672,10 @@ def edit_application(application_id):
 
 @app.route('/save_application_changes/<int:application_id>', methods=['POST'])
 def save_application_changes(application_id):
-    # Retrieve the updated fields from the form
     updated_fields = {}
     for key in request.form:
         updated_fields[key] = request.form.get(key)
 
-    # Now update the database with these values
     conn = mysql.connect()
     cursor = conn.cursor()
 
@@ -740,8 +694,6 @@ def save_application_changes(application_id):
         conn.close()
 
     return redirect(url_for('view_application', application_id=application_id))
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)

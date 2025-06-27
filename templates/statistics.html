@@ -107,10 +107,8 @@
 
 <div class="dashboard">
   <h2>Dashboard</h2>
-  <a href="{{ url_for('homepage') }}">Homepage</a>
   <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
   <a href="{{ url_for('statistics') }}">Statistics</a>
-  <a href="#">Alerts</a>
   <a href="{{ url_for('logout') }}">Logout</a>
 </div>
 
@@ -130,7 +128,6 @@
     bottom: 15px;
 ">
 
-  <!-- Left side: Text stats -->
   <div style="flex: 1; min-width: 300px;">
     <p style="font-weight: 500; margin-top: 0;">Total Loan Applications: {{ total_applications }}</p>
 
@@ -182,10 +179,8 @@
 
 
 
-<!-- More Statistics Button -->
 <button id="moreStatsBtn" style="margin-top: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">More Statistics</button>
 
-<!-- Hidden Filter Section -->
 <div id="moreStatsSection" style="margin-top: 20px; display: none;">
   <label for="rejectedFilter">Filter Rejected Applications:</label>
   <select id="rejectedFilter">
@@ -213,7 +208,6 @@
 
   </div>
 
-  <!-- Right side: Pie charts -->
   <div style="flex: 1; min-width: 300px;">
     <canvas id="workflowChart" style="max-width: 100%;"></canvas>
     <canvas id="statusChart" style="max-width: 100%; margin-top: 40px;"></canvas>
@@ -302,7 +296,6 @@
     window.location.href = url.toString();
   });
 
-  // Auto-expand filter section if filter is active (e.g., after applying date filter)
 document.addEventListener('DOMContentLoaded', () => {
   const urlParams = new URLSearchParams(window.location.search);
   const isDateFilter = urlParams.get("filter") === "rejected_date";

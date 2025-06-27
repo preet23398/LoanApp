@@ -137,10 +137,8 @@
 
 <div class="dashboard">
   <h2>Dashboard</h2>
-  <a href="{{ url_for('homepage') }}">Homepage</a>
   <a href="{{ url_for('loan_requests') }}">Loan Requests</a>
   <a href="{{ url_for('statistics') }}">Statistics</a>
-  <a href="{{ url_for('alerts') }}">Alerts</a>
   <a href="{{ url_for('logout') }}">Logout</a>
 </div>
 
@@ -211,7 +209,6 @@
     const loanAmountInput = document.getElementById('loan-amount');
     const maxAmount = parseFloat(selectedWorkflow.getAttribute('data-max'));
 
-    // Auto-select corresponding product
     for (let i = 0; i < productSelect.options.length; i++) {
       if (productSelect.options[i].dataset.workflow === selectedWorkflow.value) {
         productSelect.selectedIndex = i;
@@ -219,7 +216,6 @@
       }
     }
 
-    // Live input validation
     loanAmountInput.oninput = () => {
       const enteredAmount = parseFloat(loanAmountInput.value);
       const warning = document.getElementById('amount-warning');
@@ -231,7 +227,6 @@
     };
   }
 
-  // Trigger once when page loads
   window.onload = updateProduct;
 </script>
 
